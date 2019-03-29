@@ -14,7 +14,7 @@ import java.util.*;
 
 public class CustomNBT {
 
-    public static final String KEY_DENIZEN = "Denizen NBT";
+    public static final String KEY_DENIZEN = "DenizenNBT";
     public static final String KEY_ATTRIBUTES = "AttributeModifiers";
     public static final String KEY_CAN_PLACE_ON = "CanPlaceOn";
     public static final String KEY_CAN_DESTROY = "CanDestroy";
