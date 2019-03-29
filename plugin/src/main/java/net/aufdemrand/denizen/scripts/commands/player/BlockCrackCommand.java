@@ -6,7 +6,6 @@ import net.aufdemrand.denizen.nms.interfaces.PacketHelper;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -31,7 +30,7 @@ public class BlockCrackCommand extends AbstractCommand {
 
             if (arg.matchesPrefix("players")
                     && arg.matchesArgumentList(dPlayer.class)) {
-                scriptEntry.addObject("players", arg.asType(dList.class).filter(dPlayer.class));
+                scriptEntry.addObject("players", arg.asType(dList.class).filter(dPlayer.class, scriptEntry));
             }
             else if (arg.matchesPrefix("progress")
                     && arg.matchesPrimitive(aH.PrimitiveType.Integer)) {
@@ -70,7 +69,7 @@ public class BlockCrackCommand extends AbstractCommand {
     private static int lastBase;
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         List<dPlayer> players = (List<dPlayer>) scriptEntry.getObject("players");
         Element progress = scriptEntry.getElement("progress");

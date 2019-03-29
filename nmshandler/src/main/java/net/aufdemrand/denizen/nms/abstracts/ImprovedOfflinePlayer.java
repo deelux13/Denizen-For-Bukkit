@@ -28,8 +28,6 @@ package net.aufdemrand.denizen.nms.abstracts;
  * @author one4me
  */
 
-import net.aufdemrand.denizen.nms.NMSHandler;
-import net.aufdemrand.denizen.nms.NMSVersion;
 import net.aufdemrand.denizen.nms.util.jnbt.CompoundTag;
 import net.aufdemrand.denizen.nms.util.jnbt.DoubleTag;
 import net.aufdemrand.denizen.nms.util.jnbt.FloatTag;
@@ -107,13 +105,11 @@ public abstract class ImprovedOfflinePlayer {
     }
 
     public float getHealthFloat() {
-        String id = NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2) ? "Health" : "HealF";
-        return this.compound.getFloat(id);
+        return this.compound.getFloat("Health");
     }
 
     public void setHealthFloat(float input) {
-        String id = NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2) ? "Health" : "HealF";
-        this.compound = compound.createBuilder().putFloat(id, input).build();
+        this.compound = compound.createBuilder().putFloat("Health", input).build();
         if (this.autosave) {
             savePlayerData();
         }

@@ -6,7 +6,6 @@ import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.utilities.Conversion;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizen.utilities.entity.Position;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dList;
@@ -21,6 +20,8 @@ public class MountCommand extends AbstractCommand {
     public void parseArgs(ScriptEntry scriptEntry) throws InvalidArgumentsException {
 
         // Initialize necessary fields
+
+        List<dEntity> entities = null;
 
         for (aH.Argument arg : aH.interpret(scriptEntry.getArguments())) {
 
@@ -37,23 +38,30 @@ public class MountCommand extends AbstractCommand {
             else if (!scriptEntry.hasObject("entities")
                     && arg.matchesArgumentList(dEntity.class)) {
                 // Entity arg
-                scriptEntry.addObject("entities", arg.asType(dList.class).filter(dEntity.class));
+                entities = arg.asType(dList.class).filter(dEntity.class, scriptEntry);
+                scriptEntry.addObject("entities", entities);
             }
             else {
                 arg.reportUnhandled();
             }
         }
 
-        // Use the NPC or player's locations as the location if one is not specified
-
-        scriptEntry.defaultObject("location",
-                ((BukkitScriptEntryData) scriptEntry.entryData).hasPlayer() ? ((BukkitScriptEntryData) scriptEntry.entryData).getPlayer().getLocation() : null,
-                ((BukkitScriptEntryData) scriptEntry.entryData).hasNPC() ? ((BukkitScriptEntryData) scriptEntry.entryData).getNPC().getLocation() : null);
-
-        // Check to make sure required arguments have been filled
-
         if (!scriptEntry.hasObject("entities")) {
             throw new InvalidArgumentsException("Must specify entity/entities!");
+        }
+
+        if (!scriptEntry.hasObject("location")) {
+            if (entities != null) {
+                for (int i = entities.size() - 1; i >= 0; i--) {
+                    if (entities.get(i).isSpawned()) {
+                        scriptEntry.defaultObject("location", entities.get(i).getLocation());
+                        break;
+                    }
+                }
+            }
+            scriptEntry.defaultObject("location",
+                    ((BukkitScriptEntryData) scriptEntry.entryData).hasPlayer() ? ((BukkitScriptEntryData) scriptEntry.entryData).getPlayer().getLocation() : null,
+                    ((BukkitScriptEntryData) scriptEntry.entryData).hasNPC() ? ((BukkitScriptEntryData) scriptEntry.entryData).getNPC().getLocation() : null);
         }
 
         if (!scriptEntry.hasObject("location")) {
@@ -63,7 +71,7 @@ public class MountCommand extends AbstractCommand {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void execute(final ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(final ScriptEntry scriptEntry) {
         // Get objects
 
         dLocation location = (dLocation) scriptEntry.getObject("location");
@@ -90,5 +98,9 @@ public class MountCommand extends AbstractCommand {
         else {
             Position.dismount(Conversion.convertEntities(entities));
         }
+
+        dList entityList = new dList();
+        entityList.addObjects((List) entities);
+        scriptEntry.addObject("mounted_entities", entityList);
     }
 }

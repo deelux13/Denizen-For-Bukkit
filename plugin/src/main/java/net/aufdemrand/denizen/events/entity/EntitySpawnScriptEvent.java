@@ -5,14 +5,12 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dCuboid;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,11 +21,12 @@ public class EntitySpawnScriptEvent extends BukkitScriptEvent implements Listene
     // <--[event]
     // @Events
     // entity spawns
-    // entity spawns (because <cause>) (in <area>)
+    // entity spawns (because <cause>)
     // <entity> spawns
-    // <entity> spawns (because <cause>) (in <area>)
+    // <entity> spawns (because <cause>)
     //
-    // @Regex ^on [^\s]+ spawns( because [^\s]+)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ spawns( because [^\s]+)?$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -63,15 +62,13 @@ public class EntitySpawnScriptEvent extends BukkitScriptEvent implements Listene
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(0, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(0))) {
             return false;
         }
 
-        if (CoreUtilities.xthArgEquals(2, lower, "because")
-                && !CoreUtilities.getXthArg(3, lower).equalsIgnoreCase(reason.toString())) {
+        if (path.eventArgLowerAt(2).equals("because")
+                && !path.eventArgLowerAt(3).equalsIgnoreCase(reason.toString())) {
             return false;
         }
 
@@ -85,16 +82,6 @@ public class EntitySpawnScriptEvent extends BukkitScriptEvent implements Listene
     @Override
     public String getName() {
         return "EntitySpawn";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        CreatureSpawnEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -132,18 +119,16 @@ public class EntitySpawnScriptEvent extends BukkitScriptEvent implements Listene
     }
 
     @EventHandler
-    public void onEntityInteract(CreatureSpawnEvent event) {
+    public void onCreatureSpawn(CreatureSpawnEvent event) {
         Entity entity = event.getEntity();
         this.entity = new dEntity(entity);
         location = new dLocation(event.getLocation());
         cuboids = null;
         reason = new Element(event.getSpawnReason().name());
-        cancelled = event.isCancelled();
         this.event = event;
         dEntity.rememberEntity(entity);
-        fire();
+        fire(event);
         dEntity.forgetEntity(entity);
-        event.setCancelled(cancelled);
     }
 
 }

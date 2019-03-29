@@ -3,26 +3,24 @@ package net.aufdemrand.denizen.events.player;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.*;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.material.MaterialData;
 
 public class PlayerPlacesBlockScriptEvent extends BukkitScriptEvent implements Listener {
 
     // <--[event]
     // @Events
-    // player places block (in <area>)
-    // player places <material> (in <area>)
+    // player places block
+    // player places <material>
     //
-    // @Regex ^on player places [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player places [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -57,10 +55,8 @@ public class PlayerPlacesBlockScriptEvent extends BukkitScriptEvent implements L
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        String mat = CoreUtilities.getXthArg(2, lower);
+        String mat = path.eventArgLowerAt(2);
         if (!tryItem(item_in_hand, mat) && !tryMaterial(material, mat)) {
             return false;
         }
@@ -75,16 +71,6 @@ public class PlayerPlacesBlockScriptEvent extends BukkitScriptEvent implements L
     @Override
     public String getName() {
         return "PlayerPlacesBlock";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BlockPlaceEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -106,8 +92,7 @@ public class PlayerPlacesBlockScriptEvent extends BukkitScriptEvent implements L
             return material;
         }
         else if (name.equals("old_material")) {
-            MaterialData materialData = event.getBlockReplacedState().getData();
-            return dMaterial.getMaterialFrom(materialData.getItemType(), materialData.getData());
+            return new dMaterial(event.getBlockReplacedState());
         }
         else if (name.equals("item_in_hand")) {
             return item_in_hand;
@@ -127,13 +112,11 @@ public class PlayerPlacesBlockScriptEvent extends BukkitScriptEvent implements L
         if (dEntity.isNPC(event.getPlayer())) {
             return;
         }
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
+        material = new dMaterial(event.getBlock());
         location = new dLocation(event.getBlock().getLocation());
-        cancelled = event.isCancelled();
         item_in_hand = new dItem(event.getItemInHand());
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 
 }

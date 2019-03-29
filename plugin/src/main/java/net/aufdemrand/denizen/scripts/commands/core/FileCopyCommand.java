@@ -4,15 +4,14 @@ import net.aufdemrand.denizen.Settings;
 import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.Utilities;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.scripts.ScriptEntry;
 import net.aufdemrand.denizencore.scripts.commands.AbstractCommand;
-import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.nio.file.Files;
 
 public class FileCopyCommand extends AbstractCommand {
 
@@ -51,7 +50,7 @@ public class FileCopyCommand extends AbstractCommand {
     }
 
     @Override
-    public void execute(final ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(final ScriptEntry scriptEntry) {
         Element origin = scriptEntry.getElement("origin");
         Element destination = scriptEntry.getElement("destination");
         Element overwrite = scriptEntry.getElement("overwrite");
@@ -103,10 +102,10 @@ public class FileCopyCommand extends AbstractCommand {
                 d.mkdirs();
             }
             if (o.isDirectory()) {
-                FileUtils.copyDirectory(o, d);
+                Utilities.copyDirectory(o, d);
             }
             else {
-                FileUtils.copyFile(o, d);
+                Files.copy(o.toPath(), (disdir ? d.toPath().resolve(o.toPath().getFileName()) : d.toPath()));
             }
             scriptEntry.addObject("success", new Element("true"));
         }

@@ -51,7 +51,7 @@ public class ItemCanDestroy implements Property {
         if (materials != null && !materials.isEmpty()) {
             dList list = new dList();
             for (Material material : materials) {
-                list.addObject(dMaterial.getMaterialFrom(material));
+                list.addObject(new dMaterial(material));
             }
             return list;
         }
@@ -116,7 +116,7 @@ public class ItemCanDestroy implements Property {
             ItemStack itemStack = item.getItemStack();
 
             if (mechanism.hasValue()) {
-                List<Material> materials = mechanism.getValue().asType(dList.class).filter(dMaterial.class)
+                List<Material> materials = mechanism.valueAsType(dList.class).filter(dMaterial.class, mechanism.context)
                         .stream().map(dMaterial::getMaterial).collect(Collectors.toList());
                 itemStack = CustomNBT.setNBTMaterials(itemStack, CustomNBT.KEY_CAN_DESTROY, materials);
             }

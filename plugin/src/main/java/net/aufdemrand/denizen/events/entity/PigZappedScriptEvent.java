@@ -2,11 +2,9 @@ package net.aufdemrand.denizen.events.entity;
 
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,9 +14,10 @@ public class PigZappedScriptEvent extends BukkitScriptEvent implements Listener 
 
     // <--[event]
     // @Events
-    // pig zapped (in <area>)
+    // pig zapped
     //
-    // @Regex ^on pig zapped( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on pig zapped$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -61,16 +60,6 @@ public class PigZappedScriptEvent extends BukkitScriptEvent implements Listener 
     }
 
     @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PigZapEvent.getHandlerList().unregister(this);
-    }
-
-    @Override
     public boolean applyDetermination(ScriptContainer container, String determination) {
         return super.applyDetermination(container, determination);
     }
@@ -96,10 +85,8 @@ public class PigZappedScriptEvent extends BukkitScriptEvent implements Listener 
         dEntity.rememberEntity(pigZombie);
         pig_zombie = new dEntity(pigZombie);
         lightning = new dEntity(event.getLightning());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
+        fire(event);
         dEntity.forgetEntity(pigZombie);
-        event.setCancelled(cancelled);
     }
 }

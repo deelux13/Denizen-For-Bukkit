@@ -1,6 +1,8 @@
 package net.aufdemrand.denizen.nms.interfaces;
 
+import org.bukkit.Location;
 import org.bukkit.Sound;
+import org.bukkit.entity.Player;
 
 public interface SoundHelper {
 
@@ -47,7 +49,21 @@ public interface SoundHelper {
 
     Sound getDefaultMidiInstrument();
 
-    Sound getChestOpen();
+    default void playSound(Player player, Location location, String sound, float volume, float pitch, String category) {
+        if (player == null) {
+            location.getWorld().playSound(location, sound, volume, pitch);
+        }
+        else {
+            player.playSound(location, sound, volume, pitch);
+        }
+    }
 
-    Sound getChestClose();
+    default void playSound(Player player, Location location, Sound sound, float volume, float pitch, String category) {
+        if (player == null) {
+            location.getWorld().playSound(location, sound, volume, pitch);
+        }
+        else {
+            player.playSound(location, sound, volume, pitch);
+        }
+    }
 }

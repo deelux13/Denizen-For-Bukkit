@@ -5,12 +5,10 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerRiptideEvent;
@@ -19,9 +17,10 @@ public class PlayerRiptideScriptEvent extends BukkitScriptEvent implements Liste
 
     // <--[event]
     // @Events
-    // player activates riptide (in <area>)
+    // player activates riptide
     //
-    // @Regex ^on player activates riptide( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player activates riptide$
+    // @Switch in <area>
     //
     // @Cancellable false
     //
@@ -47,24 +46,12 @@ public class PlayerRiptideScriptEvent extends BukkitScriptEvent implements Liste
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
         return runInCheck(path, event.getPlayer().getLocation());
     }
 
     @Override
     public String getName() {
         return "PlayerActivatesRiptide";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerRiptideEvent.getHandlerList().unregister(this);
     }
 
     @Override

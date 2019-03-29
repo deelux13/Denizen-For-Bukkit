@@ -3,12 +3,10 @@ package net.aufdemrand.denizen.events.player;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.*;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -18,10 +16,11 @@ public class PlayerStandsOnScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // player stands on material (in <area>)
-    // player stands on (<material>) (in <area>)
+    // player stands on material
+    // player stands on (<material>)
     //
-    // @Regex ^on player stands on [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player stands on [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -51,10 +50,8 @@ public class PlayerStandsOnScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        String mat = CoreUtilities.getXthArg(3, lower);
+        String mat = path.eventArgLowerAt(3);
         if (mat.length() > 0
                 && !mat.equals("in")
                 && !tryMaterial(material, mat)) {
@@ -71,16 +68,6 @@ public class PlayerStandsOnScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "PlayerStandsOn";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerInteractEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -109,11 +96,9 @@ public class PlayerStandsOnScriptEvent extends BukkitScriptEvent implements List
         if (event.getAction() != Action.PHYSICAL) {
             return;
         }
-        material = dMaterial.getMaterialFrom(event.getClickedBlock().getType(), event.getClickedBlock().getData());
+        material = new dMaterial(event.getClickedBlock());
         location = new dLocation(event.getClickedBlock().getLocation());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

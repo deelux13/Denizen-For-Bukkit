@@ -14,6 +14,7 @@ import net.aufdemrand.denizen.utilities.MaterialCompat;
 import net.aufdemrand.denizen.utilities.PathFinder;
 import net.aufdemrand.denizen.utilities.Utilities;
 import net.aufdemrand.denizen.utilities.blocks.DirectionalBlocksHelper;
+import net.aufdemrand.denizen.utilities.blocks.OldMaterialsHelper;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizen.utilities.entity.DenizenEntityType;
 import net.aufdemrand.denizencore.objects.*;
@@ -33,6 +34,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.Attachable;
+import org.bukkit.material.Door;
 import org.bukkit.material.MaterialData;
 import org.bukkit.util.BlockIterator;
 import org.bukkit.util.Vector;
@@ -43,6 +45,23 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class dLocation extends org.bukkit.Location implements dObject, Notable, Adjustable {
+
+    /**
+     * The world name if a world reference is bad.
+     */
+    public String backupWorld;
+
+    public String getWorldName() {
+        if (getWorld() != null) {
+            return getWorld().getName();
+        }
+        return backupWorld;
+    }
+
+    @Override
+    public dLocation clone() {
+        return (dLocation) super.clone();
+    }
 
     // This pattern correctly reads both 0.9 and 0.8 notables
     final static Pattern notablePattern =
@@ -64,7 +83,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
                 + "," + (getBlockZ() + 0.5)
                 + "," + getPitch()
                 + "," + getYaw()
-                + "," + getWorld().getName();
+                + "," + getWorldName();
     }
 
     public static String getSaved(dLocation location) {
@@ -78,8 +97,8 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
             if (saved.getBlockZ() != location.getZ()) {
                 continue;
             }
-            if ((saved.getWorld() == null && location.getWorld() == null)
-                    || (saved.getWorld() != null && location.getWorld() != null && saved.getWorld().getName().equals(location.getWorld().getName()))) {
+            if ((saved.getWorldName() == null && location.getWorldName() == null)
+                    || (saved.getWorldName() != null && location.getWorldName() != null && saved.getWorldName().equals(location.getWorldName()))) {
                 return NotableManager.getSavedId(saved);
             }
         }
@@ -171,10 +190,17 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
                             Double.valueOf(split.get(0)),
                             Double.valueOf(split.get(1)));
                 }
-                return new dLocation(null,
+                if (aH.matchesDouble(split.get(2))) {
+                    return new dLocation(null,
+                            Double.valueOf(split.get(0)),
+                            Double.valueOf(split.get(1)),
+                            Double.valueOf(split.get(2)));
+                }
+                dLocation output = new dLocation(null,
                         Double.valueOf(split.get(0)),
-                        Double.valueOf(split.get(1)),
-                        Double.valueOf(split.get(2)));
+                        Double.valueOf(split.get(1)));
+                output.backupWorld = split.get(2);
+                return output;
             }
             catch (Exception e) {
                 if (context == null || context.debug) {
@@ -188,10 +214,40 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // x,y,z,world
         {
             try {
-                return new dLocation(Bukkit.getWorld(split.get(3)),
+                World world = Bukkit.getWorld(split.get(3));
+                if (world != null) {
+                    return new dLocation(world,
+                            Double.valueOf(split.get(0)),
+                            Double.valueOf(split.get(1)),
+                            Double.valueOf(split.get(2)));
+                }
+                dLocation output = new dLocation(null,
                         Double.valueOf(split.get(0)),
                         Double.valueOf(split.get(1)),
                         Double.valueOf(split.get(2)));
+                output.backupWorld = split.get(3);
+                return output;
+            }
+            catch (Exception e) {
+                if (context == null || context.debug) {
+                    dB.log("Minor: valueOf dLocation returning null: " + string + "(internal exception:" + e.getMessage() + ")");
+                }
+                return null;
+            }
+        }
+        else if (split.size() == 5)
+
+        // If 5 values, location with pitch/yaw (no world)
+        // x,y,z,pitch,yaw
+        {
+            try {
+                dLocation output = new dLocation(null,
+                        Double.valueOf(split.get(0)),
+                        Double.valueOf(split.get(1)),
+                        Double.valueOf(split.get(2)),
+                        Float.valueOf(split.get(3)),
+                        Float.valueOf(split.get(4)));
+                return output;
             }
             catch (Exception e) {
                 if (context == null || context.debug) {
@@ -203,16 +259,26 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         else if (split.size() == 6)
 
         // If 6 values, location with pitch/yaw
-        // x,y,z,yaw,pitch,world
+        // x,y,z,pitch,yaw,world
         {
             try {
-                return new dLocation(Bukkit.getWorld(split.get(5)),
+                World world = Bukkit.getWorld(split.get(5));
+                if (world != null) {
+                    return new dLocation(world,
+                            Double.valueOf(split.get(0)),
+                            Double.valueOf(split.get(1)),
+                            Double.valueOf(split.get(2)),
+                            Float.valueOf(split.get(3)),
+                            Float.valueOf(split.get(4)));
+                }
+                dLocation output = new dLocation(null,
                         Double.valueOf(split.get(0)),
                         Double.valueOf(split.get(1)),
                         Double.valueOf(split.get(2)),
                         Float.valueOf(split.get(3)),
                         Float.valueOf(split.get(4)));
-
+                output.backupWorld = split.get(5);
+                return output;
             }
             catch (Exception e) {
                 if (context == null || context.debug) {
@@ -249,7 +315,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
     private boolean is2D = false;
 
     /**
-     * Turns a Bukkit Location into a Location, which has some helpful methods
+     * Turns a Bukkit Location into a dLocation, which has some helpful methods
      * for working with dScript.
      *
      * @param location the Bukkit Location to reference
@@ -284,8 +350,8 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         super(world, x, y, z);
     }
 
-    public dLocation(World world, double x, double y, double z, float yaw, float pitch) {
-        super(world, x, y, z, pitch, yaw);
+    public dLocation(World world, double x, double y, double z, float pitch, float yaw) {
+        super(world, x, y, z, yaw, pitch);
     }
 
 
@@ -425,10 +491,10 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
             return false;
         }
         dLocation other = (dLocation) o;
-        if ((other.getWorld() == null && getWorld() != null)
-                || (getWorld() == null && other.getWorld() != null)
-                || (getWorld() != null && other.getWorld() != null
-                && !getWorld().getName().equalsIgnoreCase(other.getWorld().getName()))) {
+        if ((other.getWorldName() == null && getWorldName() != null)
+                || (getWorldName() == null && other.getWorldName() != null)
+                || (getWorldName() != null && other.getWorldName() != null
+                && !getWorldName().equalsIgnoreCase(other.getWorldName()))) {
             return false;
         }
         return Math.floor(getX()) == Math.floor(other.getX())
@@ -480,23 +546,26 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         if (isUnique()) {
             return "l@" + getSaved(this);
         }
-        else if (getWorld() == null) {
+        else if (getWorldName() == null) {
             return "l@" + getBlockX() + "," + getBlockY() + (!is2D ? "," + getBlockZ() : "");
         }
         else {
             return "l@" + getBlockX() + "," + getBlockY() + (!is2D ? "," + getBlockZ() : "")
-                    + "," + getWorld().getName();
+                    + "," + getWorldName();
         }
     }
 
     public String identifyRaw() {
         if (getYaw() != 0.0 || getPitch() != 0.0) {
-            return "l@" + getX() + "," + getY() + "," + getZ() + "," + getPitch() + "," + getYaw()
-                    + (getWorld() != null ? "," + getWorld().getName() : "");
+            return "l@" + CoreUtilities.doubleToString(getX()) + "," + CoreUtilities.doubleToString(getY())
+                    + "," + CoreUtilities.doubleToString(getZ()) + "," + CoreUtilities.doubleToString(getPitch())
+                    + "," + CoreUtilities.doubleToString(getYaw())
+                    + (getWorldName() != null ? "," + getWorldName() : "");
         }
         else {
-            return "l@" + getX() + "," + getY() + (!is2D ? "," + getZ() : "")
-                    + (getWorld() != null ? "," + getWorld().getName() : "");
+            return "l@" + CoreUtilities.doubleToString(getX()) + "," + CoreUtilities.doubleToString(getY())
+                    + (!is2D ? "," + CoreUtilities.doubleToString(getZ()) : "")
+                    + (getWorldName() != null ? "," + getWorldName() : "");
         }
     }
 
@@ -630,7 +699,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // Returns the material of the block at the location.
         // -->
         if (attribute.startsWith("material")) {
-            return dMaterial.getMaterialFrom(getBlock().getType(), getBlock().getData()).getAttribute(attribute.fulfill(1));
+            return new dMaterial(getBlock()).getAttribute(attribute.fulfill(1));
         }
 
         // <--[tag]
@@ -640,14 +709,8 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // @mechanism dLocation.patterns
         // @description
         // Lists the patterns of the banner at this location in the form "li@COLOR/PATTERN|COLOR/PATTERN" etc.
-        // Available colors: black, blue, brown, cyan, gray, green, light_blue, lime, magenta, orange, pink
-        // purple, red, silver, white, and yellow.
-        // Available patterns: base, border, bricks, circle_middle, creeper, cross, curly_border, diagonal_left,
-        // diagonal_left_mirror, diagonal_right, diagonal_right_mirror, flower, gradient, gradient_up, half_horizontal,
-        // half_horizontal_mirror, half_vertical, half_vertical_mirror, mojang, rhombus_middle, skull,
-        // square_bottom_left, square_bottom_right, square_top_left, square_top_right, straight_cross, stripe_bottom,
-        // stripe_center, stripe_downleft, stripe_downright, stripe_left, stripe_middle, stripe_right, stripe_small,
-        // stripe_top, triangle_bottom, triangle_top, triangles_bottom, and triangles_top
+        // For the list of possible colors, see <@link url http://bit.ly/1dydq12>.
+        // For the list of possible patterns, see <@link url http://bit.ly/1MqRn7T>.
         // -->
         if (attribute.startsWith("patterns")) {
             dList list = new dList();
@@ -723,8 +786,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // @description
         // Returns the password to a locked container.
         // -->
-        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_10_R1)
-                && attribute.startsWith("lock") && getBlock().getState() instanceof Lockable) {
+        if (attribute.startsWith("lock") && getBlock().getState() instanceof Lockable) {
             Lockable lock = (Lockable) getBlock().getState();
             return new Element(lock.isLocked() ? lock.getLock() : null)
                     .getAttribute(attribute.fulfill(1));
@@ -737,8 +799,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // @description
         // Returns whether the container is locked.
         // -->
-        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_10_R1)
-                && attribute.startsWith("is_locked") && getBlock().getState() instanceof Lockable) {
+        if (attribute.startsWith("is_locked") && getBlock().getState() instanceof Lockable) {
             return new Element(((Lockable) getBlock().getState()).isLocked())
                     .getAttribute(attribute.fulfill(1));
         }
@@ -750,8 +811,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // @description
         // Returns whether the container is lockable.
         // -->
-        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_10_R1)
-                && attribute.startsWith("is_lockable")) {
+        if (attribute.startsWith("is_lockable")) {
             return new Element(getBlock().getState() instanceof Lockable)
                     .getAttribute(attribute.fulfill(1));
         }
@@ -792,7 +852,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
             }
             else if (getBlock().getType() == Material.FLOWER_POT) {
                 MaterialData contents = NMSHandler.getInstance().getBlockHelper().getFlowerpotContents(getBlock());
-                return dMaterial.getMaterialFrom(contents.getItemType(), contents.getData())
+                return OldMaterialsHelper.getMaterialFrom(contents.getItemType(), contents.getData())
                         .getAttribute(attribute.fulfill(1));
             }
             return null;
@@ -885,7 +945,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
             return new Element("X '" + getBlockX()
                     + "', Y '" + getBlockY()
                     + "', Z '" + getBlockZ()
-                    + "', in world '" + getWorld().getName() + "'").getAttribute(attribute.fulfill(2));
+                    + "', in world '" + getWorldName() + "'").getAttribute(attribute.fulfill(2));
         }
 
         // <--[tag]
@@ -897,13 +957,13 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // For example: 1,2,3,world_nether
         // -->
         if (attribute.startsWith("simple")) {
-            if (getWorld() == null) {
+            if (getWorldName() == null) {
                 return new Element(getBlockX() + "," + getBlockY() + "," + getBlockZ())
                         .getAttribute(attribute.fulfill(1));
             }
             else {
                 return new Element(getBlockX() + "," + getBlockY() + "," + getBlockZ()
-                        + "," + getWorld().getName()).getAttribute(attribute.fulfill(1));
+                        + "," + getWorldName()).getAttribute(attribute.fulfill(1));
             }
         }
 
@@ -917,7 +977,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // @returns dLocation
         // @description
         // Returns the exact impact normal at the location this location is pointing at.
-        // Optionally, specify a maximum range to find the location from.
+        // Optionally, specify a maximum range to find the location from (defaults to 200).
         // -->
         if (attribute.startsWith("precise_impact_normal")) {
             int range = attribute.getIntContext(1);
@@ -928,9 +988,34 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
             double nx = xzLen * Math.sin(-getYaw() * (Math.PI / 180));
             double ny = Math.sin(getPitch() * (Math.PI / 180));
             double nz = xzLen * Math.cos(getYaw() * (Math.PI / 180));
-            Location location = NMSHandler.getInstance().getEntityHelper().getImpactNormal(this, new org.bukkit.util.Vector(nx, -ny, nz), range);
+            Location location = NMSHandler.getInstance().getEntityHelper().getImpactNormal(this, new Vector(nx, -ny, nz), range);
             if (location != null) {
                 return new dLocation(location).getAttribute(attribute.fulfill(1));
+            }
+            else {
+                return null;
+            }
+        }
+
+        // <--[tag]
+        // @attribute <l@location.precise_cursor_on_block[<range>]>
+        // @returns dLocation
+        // @description
+        // Returns the block location this location is pointing at.
+        // Optionally, specify a maximum range to find the location from (defaults to 200).
+        // -->
+        if (attribute.startsWith("precise_cursor_on_block")) {
+            int range = attribute.getIntContext(1);
+            if (range < 1) {
+                range = 200;
+            }
+            double xzLen = Math.cos((getPitch() % 360) * (Math.PI / 180));
+            double nx = xzLen * Math.sin(-getYaw() * (Math.PI / 180));
+            double ny = Math.sin(getPitch() * (Math.PI / 180));
+            double nz = xzLen * Math.cos(getYaw() * (Math.PI / 180));
+            Location location = NMSHandler.getInstance().getEntityHelper().rayTraceBlock(this, new Vector(nx, -ny, nz), range);
+            if (location != null) {
+                return new dLocation(location.getBlock().getLocation()).getAttribute(attribute.fulfill(1));
             }
             else {
                 return null;
@@ -942,7 +1027,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // @returns dLocation
         // @description
         // Returns the exact location this location is pointing at.
-        // Optionally, specify a maximum range to find the location from.
+        // Optionally, specify a maximum range to find the location from (defaults to 200).
         // -->
         if (attribute.startsWith("precise_cursor_on")) {
             int range = attribute.getIntContext(1);
@@ -953,7 +1038,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
             double nx = xzLen * Math.sin(-getYaw() * (Math.PI / 180));
             double ny = Math.sin(getPitch() * (Math.PI / 180));
             double nz = xzLen * Math.cos(getYaw() * (Math.PI / 180));
-            Location location = NMSHandler.getInstance().getEntityHelper().rayTrace(this, new org.bukkit.util.Vector(nx, -ny, nz), range);
+            Location location = NMSHandler.getInstance().getEntityHelper().rayTrace(this, new Vector(nx, -ny, nz), range);
             if (location != null) {
                 return new dLocation(location).getAttribute(attribute.fulfill(1));
             }
@@ -1332,7 +1417,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
                 int radius = aH.matchesInteger(attribute.getContext(2)) ? attribute.getIntContext(2) : 10;
                 List<dMaterial> materials = new ArrayList<dMaterial>();
                 if (attribute.hasContext(1)) {
-                    materials = dList.valueOf(attribute.getContext(1)).filter(dMaterial.class);
+                    materials = dList.valueOf(attribute.getContext(1)).filter(dMaterial.class, attribute.context);
                 }
                 // Avoid NPE from invalid materials
                 if (materials == null) {
@@ -1401,7 +1486,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
                 double radius = aH.matchesDouble(attribute.getContext(2)) ? attribute.getDoubleContext(2) : 10;
                 List<dMaterial> materials = new ArrayList<dMaterial>();
                 if (attribute.hasContext(1)) {
-                    materials = dList.valueOf(attribute.getContext(1)).filter(dMaterial.class);
+                    materials = dList.valueOf(attribute.getContext(1)).filter(dMaterial.class, attribute.context);
                 }
                 // Avoid NPE from invalid materials
                 if (materials == null) {
@@ -1621,7 +1706,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // For example: 1.0:2.0:3.0:world_nether
         // -->
         if (attribute.startsWith("formatted.citizens")) {
-            return new Element(getX() + ":" + getY() + ":" + getZ() + ":" + getWorld().getName()).getAttribute(attribute.fulfill(2));
+            return new Element(getX() + ":" + getY() + ":" + getZ() + ":" + getWorldName()).getAttribute(attribute.fulfill(2));
         }
 
         // <--[tag]
@@ -1636,7 +1721,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
             return new Element("X '" + getX()
                     + "', Y '" + getY()
                     + "', Z '" + getZ()
-                    + "', in world '" + getWorld().getName() + "'").getAttribute(attribute.fulfill(1));
+                    + "', in world '" + getWorldName() + "'").getAttribute(attribute.fulfill(1));
         }
 
         // <--[tag]
@@ -1702,6 +1787,79 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // -->
         if (attribute.startsWith("z")) {
             return new Element(getZ()).getAttribute(attribute.fulfill(1));
+        }
+
+        // <--[tag]
+        // @attribute <l@location.with_x[<number>]>
+        // @returns dLocation
+        // @description
+        // Returns a copy of the location with a changed X value.
+        // -->
+        if (attribute.matches("with_x") && attribute.hasContext(1)) {
+            dLocation output = clone();
+            output.setX(attribute.getDoubleContext(1));
+            return output.getAttribute(attribute.fulfill(1));
+        }
+
+        // <--[tag]
+        // @attribute <l@location.with_y[<number>]>
+        // @returns dLocation
+        // @description
+        // Returns a copy of the location with a changed Y value.
+        // -->
+        if (attribute.matches("with_y") && attribute.hasContext(1)) {
+            dLocation output = clone();
+            output.setY(attribute.getDoubleContext(1));
+            return output.getAttribute(attribute.fulfill(1));
+        }
+
+        // <--[tag]
+        // @attribute <l@location.with_z[<number>]>
+        // @returns dLocation
+        // @description
+        // Returns a copy of the location with a changed Z value.
+        // -->
+        if (attribute.matches("with_z") && attribute.hasContext(1)) {
+            dLocation output = clone();
+            output.setZ(attribute.getDoubleContext(1));
+            return output.getAttribute(attribute.fulfill(1));
+        }
+
+        // <--[tag]
+        // @attribute <l@location.with_yaw[<number>]>
+        // @returns dLocation
+        // @description
+        // Returns a copy of the location with a changed yaw value.
+        // -->
+        if (attribute.matches("with_yaw") && attribute.hasContext(1)) {
+            dLocation output = clone();
+            output.setYaw((float) attribute.getDoubleContext(1));
+            return output.getAttribute(attribute.fulfill(1));
+        }
+
+        // <--[tag]
+        // @attribute <l@location.with_pitch[<number>]>
+        // @returns dLocation
+        // @description
+        // Returns a copy of the location with a changed pitch value.
+        // -->
+        if (attribute.matches("with_pitch") && attribute.hasContext(1)) {
+            dLocation output = clone();
+            output.setPitch((float) attribute.getDoubleContext(1));
+            return output.getAttribute(attribute.fulfill(1));
+        }
+
+        // <--[tag]
+        // @attribute <l@location.with_world[<world>]>
+        // @returns dLocation
+        // @description
+        // Returns a copy of the location with a changed world value.
+        // -->
+        if (attribute.matches("with_world") && attribute.hasContext(1)) {
+            dLocation output = clone();
+            dWorld world = dWorld.valueOf(attribute.getContext(1));
+            output.setWorld(world.getWorld());
+            return output.getAttribute(attribute.fulfill(1));
         }
 
         // <--[tag]
@@ -1834,7 +1992,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
                 && attribute.hasContext(1)) {
             if (dLocation.matches(attribute.getContext(1))) {
                 dLocation toLocation = dLocation.valueOf(attribute.getContext(1));
-                if (!getWorld().getName().equalsIgnoreCase(toLocation.getWorld().getName())) {
+                if (!getWorldName().equalsIgnoreCase(toLocation.getWorldName())) {
                     if (!attribute.hasAlternative()) {
                         dB.echoError("Can't measure distance between two different worlds!");
                     }
@@ -1876,7 +2034,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
                                         Math.pow(this.getZ() - toLocation.getZ(), 2)))
                                 .getAttribute(attribute.fulfill(3));
                     }
-                    else if (this.getWorld() == toLocation.getWorld()) {
+                    else if (this.getWorldName().equalsIgnoreCase(toLocation.getWorldName())) {
                         return new Element(Math.sqrt(
                                 Math.pow(this.getX() - toLocation.getX(), 2) +
                                         Math.pow(this.getZ() - toLocation.getZ(), 2)))
@@ -1902,13 +2060,13 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
                         return new Element(Math.abs(this.getY() - toLocation.getY()))
                                 .getAttribute(attribute.fulfill(3));
                     }
-                    else if (this.getWorld() == toLocation.getWorld()) {
+                    else if (this.getWorldName().equalsIgnoreCase(toLocation.getWorldName())) {
                         return new Element(Math.abs(this.getY() - toLocation.getY()))
                                 .getAttribute(attribute.fulfill(2));
                     }
                 }
 
-                if (!getWorld().getName().equalsIgnoreCase(toLocation.getWorld().getName())) {
+                if (!getWorldName().equalsIgnoreCase(toLocation.getWorldName())) {
                     if (!attribute.hasAlternative()) {
                         dB.echoError("Can't measure distance between two different worlds!");
                     }
@@ -2087,7 +2245,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // <--[tag]
         // @attribute <l@location.command_block_name>
         // @returns Element
-        // @mechanism command_block_name
+        // @mechanism dLocation.command_block_name
         // @description
         // Returns the name a command block is set to.
         // -->
@@ -2099,7 +2257,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // <--[tag]
         // @attribute <l@location.command_block>
         // @returns Element
-        // @mechanism command_block
+        // @mechanism dLocation.command_block
         // @description
         // Returns the command a command block is set to.
         // -->
@@ -2111,7 +2269,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // <--[tag]
         // @attribute <l@location.furnace_burn_time>
         // @returns Element(Number)
-        // @mechanism furnace_burn_time
+        // @mechanism dLocation.furnace_burn_time
         // @description
         // Returns the burn time a furnace has left.
         // -->
@@ -2123,7 +2281,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // <--[tag]
         // @attribute <l@location.furnace_cook_time>
         // @returns Element(Number)
-        // @mechanism furnace_cook_time
+        // @mechanism dLocation.furnace_cook_time
         // @description
         // Returns the cook time a furnace has left.
         // -->
@@ -2152,9 +2310,62 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         }
 
         // <--[tag]
+        // @attribute <l@location.other_block>
+        // @returns dLocation
+        // @description
+        // If the location is part of a double-block structure
+        // (double chests, doors, beds, etc), returns the location of the other block in the double-block structure.
+        // -->
+        if (attribute.startsWith("other_block")) {
+            BlockState state = getBlock().getState();
+            if (state instanceof Chest) {
+                // There is no remotely sane API for this.
+                InventoryHolder holder = ((Chest) state).getBlockInventory().getHolder();
+                if (holder instanceof DoubleChest) {
+                    Location left = ((DoubleChest) holder).getLeftSide().getInventory().getLocation();
+                    Location right = ((DoubleChest) holder).getRightSide().getInventory().getLocation();
+                    if (left.getBlockX() == getBlockX() && left.getBlockY() == getBlockY() && left.getBlockZ() == getBlockZ()) {
+                        return new dLocation(right).getAttribute(attribute.fulfill(1));
+                    }
+                    else {
+                        return new dLocation(left).getAttribute(attribute.fulfill(1));
+                    }
+                }
+            }
+            else if (state instanceof Bed
+                && NMSHandler.getVersion().isAtLeast(NMSVersion.v1_13_R2)) {
+                // There's no pre-1.13 API for this *at all*, and the new API isn't very sane, but can be used.
+                boolean isTop = DirectionalBlocksHelper.isBedTopHalf(getBlock());
+                BlockFace direction = DirectionalBlocksHelper.getFace(getBlock());
+                if (!isTop) {
+                    direction = direction.getOppositeFace();
+                }
+                return new dLocation(this.clone().add(direction.getDirection())).getAttribute(attribute.fulfill(1));
+            }
+            else if (state.getData() instanceof Door) {
+                if (((Door) state.getData()).isTopHalf()) {
+                    return new dLocation(this.clone().subtract(0, 1, 0)).getAttribute(attribute.fulfill(1));
+                }
+                else {
+                    return new dLocation(this.clone().add(0, 1, 0)).getAttribute(attribute.fulfill(1));
+                }
+            }
+            else {
+                if (!attribute.hasAlternative()) {
+                    dB.echoError("Block of type " + getBlock().getType().name() + " isn't supported by other_block.");
+                }
+                return null;
+            }
+            if (!attribute.hasAlternative()) {
+                dB.echoError("Block of type " + getBlock().getType().name() + " doesn't have an other block.");
+            }
+            return null;
+        }
+
+        // <--[tag]
         // @attribute <l@location.custom_name>
         // @returns Element
-        // @mechanism custom_name
+        // @mechanism dLocation.custom_name
         // @description
         // Returns the custom name of this block.
         // Only works for nameable blocks, such as chests and dispensers.
@@ -2181,11 +2392,9 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
     @Override
     public void adjust(Mechanism mechanism) {
 
-        Element value = mechanism.getValue();
-
         if (mechanism.matches("data") && mechanism.hasValue()) {
             dB.echoError("Material ID and data magic number support is deprecated and WILL be removed in a future release.");
-            BlockData blockData = NMSHandler.getInstance().getBlockHelper().getBlockData(getBlock().getType(), (byte) value.asInt());
+            BlockData blockData = NMSHandler.getInstance().getBlockHelper().getBlockData(getBlock().getType(), (byte) mechanism.getValue().asInt());
             blockData.setBlock(getBlock(), false);
         }
 
@@ -2199,7 +2408,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // <l@location.block_facing>
         // -->
         if (mechanism.matches("block_facing") && mechanism.requireObject(dLocation.class)) {
-            dLocation faceVec = value.asType(dLocation.class);
+            dLocation faceVec = mechanism.valueAsType(dLocation.class);
             DirectionalBlocksHelper.setFacing(getBlock(), faceVec.toVector());
         }
 
@@ -2213,10 +2422,8 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // <l@location.material>
         // -->
         if (mechanism.matches("block_type") && mechanism.requireObject(dMaterial.class)) {
-            dMaterial mat = value.asType(dMaterial.class);
-            byte data = mat.hasData() ? mat.getData() : 0;
-            BlockData blockData = NMSHandler.getInstance().getBlockHelper().getBlockData(mat.getMaterial(), data);
-            blockData.setBlock(getBlock(), false);
+            dMaterial mat = mechanism.valueAsType(dMaterial.class);
+            mat.getNmsBlockData().setBlock(getBlock(), false);
         }
 
         // <--[mechanism]
@@ -2229,7 +2436,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // <l@location.biome>
         // -->
         if (mechanism.matches("biome") && mechanism.requireObject(dBiome.class)) {
-            value.asType(dBiome.class).getBiome().changeBlockBiome(this);
+            mechanism.valueAsType(dBiome.class).getBiome().changeBlockBiome(this);
         }
 
         // <--[mechanism]
@@ -2244,7 +2451,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         if (mechanism.matches("spawner_type") && mechanism.requireObject(dEntity.class)
                 && getBlock().getState() instanceof CreatureSpawner) {
             CreatureSpawner spawner = ((CreatureSpawner) getBlock().getState());
-            spawner.setSpawnedType(value.asType(dEntity.class).getBukkitEntityType());
+            spawner.setSpawnedType(mechanism.valueAsType(dEntity.class).getBukkitEntityType());
             spawner.update();
         }
 
@@ -2261,8 +2468,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // <l@location.is_locked>
         // <l@location.is_lockable>
         // -->
-        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_10_R1)
-                && mechanism.matches("lock") && getBlock().getState() instanceof Lockable) {
+        if (mechanism.matches("lock") && getBlock().getState() instanceof Lockable) {
             BlockState state = getBlock().getState();
             ((Lockable) state).setLock(mechanism.hasValue() ? mechanism.getValue().asString() : null);
             state.update();
@@ -2284,7 +2490,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
             for (int i = 0; i < 4; i++) {
                 state.setLine(i, "");
             }
-            dList list = value.asType(dList.class);
+            dList list = mechanism.valueAsType(dList.class);
             if (list.size() > 4) {
                 dB.echoError("Sign can only hold four lines!");
             }
@@ -2316,7 +2522,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
                 dB.echoError("As of Minecraft version 1.13 you may only set the skin of a PLAYER_HEAD or PLAYER_WALL_HEAD.");
             }
             else if (blockState instanceof Skull) {
-                dList list = mechanism.getValue().asType(dList.class);
+                dList list = mechanism.valueAsType(dList.class);
                 String idString = list.get(0);
                 String texture = null;
                 if (list.size() > 1) {
@@ -2359,7 +2565,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
                 dB.echoError("As of Minecraft version 1.13 potted flowers each have their own material, such as POTTED_CACTUS.");
             }
             else if (getBlock().getType() == Material.FLOWER_POT) {
-                MaterialData data = value.asType(dMaterial.class).getMaterialData();
+                MaterialData data = mechanism.valueAsType(dMaterial.class).getMaterialData();
                 NMSHandler.getInstance().getBlockHelper().setFlowerpotContents(getBlock(), data);
             }
         }
@@ -2376,7 +2582,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         if (mechanism.matches("command_block_name")) {
             if (getBlock().getType() == MaterialCompat.COMMAND_BLOCK) {
                 CommandBlock block = ((CommandBlock) getBlock().getState());
-                block.setName(value.asString());
+                block.setName(mechanism.getValue().asString());
                 block.update();
             }
         }
@@ -2393,7 +2599,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         if (mechanism.matches("command_block")) {
             if (getBlock().getType() == MaterialCompat.COMMAND_BLOCK) {
                 CommandBlock block = ((CommandBlock) getBlock().getState());
-                block.setCommand(value.asString());
+                block.setCommand(mechanism.getValue().asString());
                 block.update();
             }
         }
@@ -2432,7 +2638,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         if (mechanism.matches("furnace_burn_time")) {
             if (MaterialCompat.isFurnace(getBlock().getType())) {
                 Furnace furnace = (Furnace) getBlock().getState();
-                furnace.setBurnTime((short) value.asInt());
+                furnace.setBurnTime((short) mechanism.getValue().asInt());
                 furnace.update();
             }
         }
@@ -2449,7 +2655,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         if (mechanism.matches("furnace_cook_time")) {
             if (MaterialCompat.isFurnace(getBlock().getType())) {
                 Furnace furnace = (Furnace) getBlock().getState();
-                furnace.setCookTime((short) value.asInt());
+                furnace.setCookTime((short) mechanism.getValue().asInt());
                 furnace.update();
             }
         }
@@ -2481,10 +2687,11 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // For the list of possible patterns, see <@link url http://bit.ly/1MqRn7T>.
         // @tags
         // <l@location.patterns>
+        // <server.list_patterns>
         // -->
         if (mechanism.matches("patterns")) {
             List<org.bukkit.block.banner.Pattern> patterns = new ArrayList<org.bukkit.block.banner.Pattern>();
-            dList list = mechanism.getValue().asType(dList.class);
+            dList list = mechanism.valueAsType(dList.class);
             List<String> split;
             for (String string : list) {
                 try {
@@ -2512,7 +2719,7 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // -->
         if (mechanism.matches("head_rotation") && mechanism.requireInteger()) {
             Skull sk = (Skull) getBlock().getState();
-            sk.setRotation(getSkullBlockFace(value.asInt() - 1));
+            sk.setRotation(getSkullBlockFace(mechanism.getValue().asInt() - 1));
             sk.update();
         }
 
@@ -2524,10 +2731,10 @@ public class dLocation extends org.bukkit.Location implements dObject, Notable, 
         // Generates a tree at this location if possible.
         // For a list of valid tree types, see <@link url http://bit.ly/2o7m1je>
         // @tags
-        // None
+        // <server.list_tree_types>
         // -->
         if (mechanism.matches("generate_tree") && mechanism.requireEnum(false, TreeType.values())) {
-            boolean generated = getWorld().generateTree(this, TreeType.valueOf(value.asString().toUpperCase()));
+            boolean generated = getWorld().generateTree(this, TreeType.valueOf(mechanism.getValue().asString().toUpperCase()));
             if (!generated) {
                 dB.echoError("Could not generate tree at " + identifySimple() + ". Make sure this location can naturally generate a tree!");
             }

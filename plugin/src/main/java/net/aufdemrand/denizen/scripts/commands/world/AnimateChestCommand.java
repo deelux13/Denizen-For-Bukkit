@@ -6,13 +6,13 @@ import net.aufdemrand.denizen.nms.interfaces.PacketHelper;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.scripts.ScriptEntry;
 import net.aufdemrand.denizencore.scripts.commands.AbstractCommand;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.util.Arrays;
@@ -41,7 +41,7 @@ public class AnimateChestCommand extends AbstractCommand {
             }
             else if (!scriptEntry.hasObject("players")
                     && arg.matchesArgumentList(dPlayer.class)) {
-                scriptEntry.addObject("players", arg.asType(dList.class).filter(dPlayer.class));
+                scriptEntry.addObject("players", arg.asType(dList.class).filter(dPlayer.class, scriptEntry));
             }
             else {
                 arg.reportUnhandled();
@@ -58,7 +58,7 @@ public class AnimateChestCommand extends AbstractCommand {
         }
 
         if (!scriptEntry.hasObject("sound")) {
-            scriptEntry.addObject("sound", Element.TRUE);
+            scriptEntry.addObject("sound", new Element(true));
         }
 
         if (!scriptEntry.hasObject("players")) {
@@ -73,7 +73,7 @@ public class AnimateChestCommand extends AbstractCommand {
     }
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         dLocation location = (dLocation) scriptEntry.getObject("location");
         Element action = scriptEntry.getElement("action");
@@ -96,7 +96,8 @@ public class AnimateChestCommand extends AbstractCommand {
                 for (dPlayer player : players) {
                     Player ent = player.getPlayerEntity();
                     if (sound.asBoolean()) {
-                        ent.playSound(location, NMSHandler.getInstance().getSoundHelper().getChestOpen(), 1, 1);
+                        NMSHandler.getInstance().getSoundHelper().playSound(ent, location,
+                                Sound.BLOCK_CHEST_OPEN, 1, 1, "BLOCKS");
                     }
                     packetHelper.showBlockAction(ent, location, 1, 1);
                 }
@@ -106,7 +107,8 @@ public class AnimateChestCommand extends AbstractCommand {
                 for (dPlayer player : players) {
                     Player ent = player.getPlayerEntity();
                     if (sound.asBoolean()) {
-                        ent.playSound(location, NMSHandler.getInstance().getSoundHelper().getChestClose(), 1, 1);
+                        NMSHandler.getInstance().getSoundHelper().playSound(ent, location,
+                                Sound.BLOCK_CHEST_CLOSE, 1, 1, "BLOCKS");
                     }
                     packetHelper.showBlockAction(ent, location, 1, 0);
                 }

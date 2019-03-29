@@ -6,13 +6,11 @@ import net.aufdemrand.denizen.objects.dCuboid;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,10 +21,11 @@ public class PlayerPlacesHangingScriptEvent extends BukkitScriptEvent implements
     // TODO: de-collide with places block
     // <--[event]
     // @Events
-    // player places hanging (in <area>)
-    // player places <hanging> (in <area>)
+    // player places hanging
+    // player places <hanging>
     //
-    // @Regex ^on player places [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player places [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -57,9 +56,7 @@ public class PlayerPlacesHangingScriptEvent extends BukkitScriptEvent implements
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String hangCheck = CoreUtilities.getXthArg(2, lower);
+        String hangCheck = path.eventArgLowerAt(2);
         if (!tryEntity(hanging, hangCheck)) {
             return false;
         }
@@ -71,16 +68,6 @@ public class PlayerPlacesHangingScriptEvent extends BukkitScriptEvent implements
     @Override
     public String getName() {
         return "PlayerPlacesHanging";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        HangingPlaceEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -123,10 +110,8 @@ public class PlayerPlacesHangingScriptEvent extends BukkitScriptEvent implements
         hanging = new dEntity(hangingEntity);
         location = new dLocation(event.getBlock().getLocation());
         cuboids = null;
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
+        fire(event);
         dEntity.forgetEntity(hangingEntity);
-        event.setCancelled(cancelled);
     }
 }

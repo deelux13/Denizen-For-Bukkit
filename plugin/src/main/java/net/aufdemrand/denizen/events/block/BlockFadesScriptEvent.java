@@ -3,11 +3,9 @@ package net.aufdemrand.denizen.events.block;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFadeEvent;
@@ -16,10 +14,11 @@ public class BlockFadesScriptEvent extends BukkitScriptEvent implements Listener
 
     // <--[event]
     // @Events
-    // block fades (in <area>)
-    // <block> fades (in <area>)
+    // block fades
+    // <block> fades
     //
-    // @Regex ^on [^\s]+ fades( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ fades$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -49,29 +48,17 @@ public class BlockFadesScriptEvent extends BukkitScriptEvent implements Listener
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
         if (!runInCheck(path, location)) {
             return false;
         }
 
-        String mat = CoreUtilities.getXthArg(0, lower);
+        String mat = path.eventArgLowerAt(0);
         return tryMaterial(material, mat);
     }
 
     @Override
     public String getName() {
         return "BlockFades";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BlockFadeEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -93,10 +80,8 @@ public class BlockFadesScriptEvent extends BukkitScriptEvent implements Listener
     @EventHandler
     public void onBlockFades(BlockFadeEvent event) {
         location = new dLocation(event.getBlock().getLocation());
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
-        cancelled = event.isCancelled();
+        material = new dMaterial(event.getBlock());
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

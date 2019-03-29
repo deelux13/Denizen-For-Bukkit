@@ -40,7 +40,7 @@ public class ItemHelper_v1_13_R2 implements ItemHelper {
 
     @Override
     public String getJsonString(ItemStack itemStack) {
-        String json = CraftItemStack.asNMSCopy(itemStack).A().getChatModifier().toString().replace("\"", "\\\"");
+        String json = CraftItemStack.asNMSCopy(itemStack).A().getChatModifier().toString().replace("\\", "\\\\").replace("\"", "\\\"");
         return json.substring(176, json.length() - 185);
     }
 
@@ -104,34 +104,6 @@ public class ItemHelper_v1_13_R2 implements ItemHelper {
         net.minecraft.server.v1_13_R2.ItemStack nmsItemStack = CraftItemStack.asNMSCopy(itemStack);
         nmsItemStack.setTag(((CompoundTag_v1_13_R2) compoundTag).toNMSTag());
         return CraftItemStack.asBukkitCopy(nmsItemStack);
-    }
-
-    @Override
-    public Map<EntityAttribute, List<EntityAttributeModifier>> getAttributeModifiers(ItemStack itemStack) {
-        Map<EntityAttribute, List<EntityAttributeModifier>> modifiers = new HashMap<EntityAttribute, List<EntityAttributeModifier>>();
-        List<Tag> modifierList = getNbtData(itemStack).getList("AttributeModifiers");
-        for (Tag tag : modifierList) {
-            if (!(tag instanceof CompoundTag)) {
-                continue;
-            }
-            CompoundTag modifier = (CompoundTag) tag;
-            EntityAttribute attribute = EntityAttribute.getByName(modifier.getString("AttributeName"));
-            if (attribute == null) {
-                continue;
-            }
-            if (!modifiers.containsKey(attribute)) {
-                modifiers.put(attribute, new ArrayList<EntityAttributeModifier>());
-            }
-            UUID uuid = new UUID(modifier.getLong("UUIDMost"), modifier.getLong("UUIDLeast"));
-            String name = modifier.getString("Name");
-            EntityAttributeModifier.Operation operation = EntityAttributeModifier.Operation.values()[modifier.getInt("Operation")];
-            if (operation == null) {
-                continue;
-            }
-            double amount = modifier.getDouble("Amount");
-            modifiers.get(attribute).add(new EntityAttributeModifier(uuid, name, operation, amount));
-        }
-        return modifiers;
     }
 
     @Override

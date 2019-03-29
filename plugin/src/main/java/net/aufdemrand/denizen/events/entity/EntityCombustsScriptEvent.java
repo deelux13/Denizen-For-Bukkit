@@ -4,7 +4,6 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Duration;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -12,7 +11,6 @@ import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -24,10 +22,11 @@ public class EntityCombustsScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // entity combusts (in <area>)
-    // <entity> combusts (in <area>)
+    // entity combusts
+    // <entity> combusts
     //
-    // @Regex ^on [^\s]+ combusts( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ combusts$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -64,10 +63,8 @@ public class EntityCombustsScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(0, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(0))) {
             return false;
         }
 
@@ -81,16 +78,6 @@ public class EntityCombustsScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "EntityCombusts";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityCombustEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -143,10 +130,8 @@ public class EntityCombustsScriptEvent extends BukkitScriptEvent implements List
     public void onEntityCombusts(EntityCombustEvent event) {
         entity = new dEntity(event.getEntity());
         burntime = event.getDuration();
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setDuration(burntime);
     }
 }

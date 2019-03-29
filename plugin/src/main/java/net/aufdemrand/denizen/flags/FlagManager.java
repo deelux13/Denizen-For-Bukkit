@@ -16,97 +16,6 @@ import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.*;
 
-// <--[language]
-// @name flags
-// @group flag system
-// @description
-// Flags are a feature that is implemented by Denizen to allow the dynamic and persistent storage of information
-// to NPC and player objects as well as the server on a global scale. Whether you need to store a quest variable
-// on a player, or you are keeping track of the number of people logging into your server, flags can help.
-//
-// First, a couple facts about flags:
-// 1) They are persistent, that is - they survive a server restart, as long as '/denizen save' or a proper shutdown
-// has happened since the flag was made.
-// 2) They are stored in flags.yml whenever '/denizen save' is used. Otherwise, since writing to the disk is
-// 'expensive' as far as performance is concerned, they are stored in memory.
-// 3) Flags can be attached to players, NPCs, or the server. This means both 'aufdemrand' and 'davidcernat' can have
-// a flag by the same name, but contain separate values if stored to their player-objects.
-// 4) Flags can be booleans, single-item values, or multiple-item arrays, and storing information inside them is
-// smart and reliable.
-// 5) You can set expirations on any flag, to set the maximum life of a flag. This is great for cooldowns and
-// temporary variables.
-// 6) Flags have world script events, so you can tell when a flag is changing, and react to those changes.
-//
-// Here's the basics:
-//
-// Since the range of information needing to be stored can vary, flags offer a flexible way to handle many situations.
-// Flags in their simplest form are a true/false method of storage, with tags available to check if a flag exists. But
-// they can also store a piece of information, in a 'key/value' relationship. Name the flag, set the value. This can
-// serve a dual purpose, since 1) you can prove it exists, using it as a boolean, and 2) another piece of information
-// can be stored. It's like saying, 'this flag exists, and stored with it is a chunk of information'.
-//
-// The elements stored in flags also have the ability to do perform functions if they are numbers. Easily create
-// a counter with flags, simply by using the flag command to use the '+' feature. Also available is '-' to
-// decrease, '*' to multiply, and '/' to divide the values.
-//
-// Flags can act as arrays of information as well, with the ability to add additional elements to a single flag. Flags
-// with multiple values use a 'smart-index' with the ability to get/remove information via a number, or by its value.
-// Included with the flag command is an easy way to add and remove elements from the array, see the flag command for
-// more information.
-//
-// Flags are modified by using the flag command, and easily read by using a replaceable tag. Here are some examples
-// of some snippets of actual code:
-//
-// Setting a boolean flag to a player, and retrieving it:
-// We'll use the player linked to the script by specifying <player> in the flag command. The next argument
-// is 'stoneskin', shown here without quotes since it's just one word. This will be the name of the flag.
-// Second command, 'narrate', as used below will show the player "p@player_name has flag 'stoneskin'? true". The 'true'
-// is retrieved by using the player attribute 'has_flag[flag_name]' to check. If this flag did not exist, it would
-// return false. To see a list of flag tags, see 'A list of flag-specific tags'.
-// <code>
-// - flag <player> stoneskin
-// - narrate "<player.name> has flag 'stoneskin'? <player.has_flag[stoneskin]>"
-// </code>
-//
-//
-// Using flags as counters:
-// Definitions are nice and light, but sometimes they just don't do the job. For example, using flags in foreach loops
-// is a great idea, and really easy to do.
-// <code>
-// # initiate a loop through each player that has logged onto the server
-// # Inside the loop, check if the player's flag 'completed' contains in it an element named 'beginners tutorial'.
-// # If it does, increment the server flag 'completes_counter' by one, and give it 10 seconds to live.
-// - foreach <server.list_players> {
-//     - if <def[value].flag[completed].as_list> contains 'beginners tutorial'
-//       flag server completes_counter:++ duration:10s
-//   }
-// # Now show the number of players who had the element in their 'completed' flag.
-// - narrate "The number of players who have completed the beginner's tutorial is<&co> <server.flag[completes_counter]>"
-// </code>
-//
-//
-// Using flags as object storage:
-// Flags can hold fetchable objects as well. Let's say players can be friends with NPCs. Why not store the friends
-// on the NPC with a list of player objects?
-// <code>
-// - flag <npc> friends:->:<player>
-// - foreach <npc.flag[friends].as_list> {
-//     - chat t:<def[value]> 'You are my friend!'
-//   }
-// </code>
-//
-// Need to store a location? Store it in a flag!
-// <code>
-// - flag <player> home_location:<player.location.simple>
-// - narrate "Your home location is now '<player.flag[home_location].as_location.simple>'!"
-// </code>
-//
-//
-// Flags are good for lots of other things too! Check out the flag command and 'fl@flag' tags
-// for more specific information.
-// -->
-
-
 public class FlagManager {
 
     // Valid flag actions
@@ -196,17 +105,9 @@ public class FlagManager {
 
     public Flag getEntityFlag(dEntity entity, String flagName) {
         if (entity == null) {
-            return new Flag("Entities.00.UNKNOWN.Flags." + flagName.toUpperCase(), flagName, "p@null");
+            return new Flag("Entities.00.UNKNOWN.Flags." + flagName.toUpperCase(), flagName, "e@null");
         }
         return new Flag("Entities." + entity.getSaveName() + ".Flags." + flagName.toUpperCase(), flagName, entity.identify());
-    }
-
-    public Flag getPlayerFlag(UUID player, String flagName) {
-        if (player == null) {
-            return new Flag("players.00.UNKNOWN.Flags." + flagName.toUpperCase(), flagName, "p@null");
-        }
-        String baseID = player.toString().toUpperCase().replace("-", "");
-        return new Flag("Players." + baseID.substring(0, 2) + "." + baseID + ".Flags." + flagName.toUpperCase(), flagName, "p@" + player.toString());
     }
 
     /**
@@ -271,35 +172,13 @@ public class FlagManager {
         return flagKeys;
     }
 
-
-    /**
-     * Flag object contains methods for working with Flags and contain a list
-     * of the values associated with said flag (if existing) and (optionally) an
-     * expiration (if existing).
-     * <p/>
-     * Storage example in Denizen saves.yml:
-     * <p/>
-     * 'FLAG_NAME':
-     * - First Value
-     * - Second Value
-     * - Third Value
-     * - ...
-     * 'FLAG_NAME-expiration': 123456789
-     * <p/>
-     * To work with multiple values in a flag, an index must be provided. Indexes
-     * start at 1 and get higher as more items are added. Specifying an index of -1, or,
-     * when possible, supplying NO index will result in retrieving/setting/etc the
-     * item with the highest index. Also, note that when using a FLAG TAG in DSCRIPT,
-     * ie. <FLAG.P:FLAG_NAME>, specifying no index will follow suit, that is, the
-     * value with the highest index will be referenced.
-     */
     public class Flag {
 
         private Value value;
         private String flagPath;
         private String flagName;
         private String flagOwner;
-        private long expiration = (long) -1;
+        private long expiration = -1L;
         private boolean valid = true;
 
         Flag(String flagPath, String flagName, String flagOwner) {
@@ -307,31 +186,6 @@ public class FlagManager {
             this.flagName = flagName;
             this.flagOwner = flagOwner;
             rebuild();
-        }
-
-        /**
-         * Returns whether or not a value currently exists in the Flag. The
-         * provided value will check if it matches an existing value by means
-         * of a String.equalsIgnoreCase as well as a Double match if the
-         * provided value is a number.
-         */
-        public boolean contains(String stringValue) {
-            if (checkExpired()) {
-                return false;
-            }
-            for (String val : value.values) {
-                if (val.equalsIgnoreCase(stringValue)) {
-                    return true;
-                }
-                try {
-                    if (Double.valueOf(val).equals(Double.valueOf(stringValue))) {
-                        return true;
-                    }
-                }
-                catch (NumberFormatException e) { /* Not a valid number, continue. */ }
-            }
-
-            return false;
         }
 
         /**
@@ -346,7 +200,7 @@ public class FlagManager {
          */
         public List<String> values() {
             checkExpired();
-            return value.values;
+            return value.asList();
         }
 
         /**
@@ -367,6 +221,8 @@ public class FlagManager {
         // server flag cleared
         // server flag <flagname> cleared
         //
+        // @Regex ^on (player |entity |npc |server )flag( [^\s]+)? cleared$
+        //
         // @Warning This event will fire rapidly and not exactly when you might expect it to fire. Generally, do not use this event unless you know what you're doing.
         //
         // @Triggers when a flag is cleared
@@ -384,19 +240,19 @@ public class FlagManager {
         public void clear() {
             String OldOwner = flagOwner;
             String OldName = flagName;
-            dObject OldValue = value.size() > 1
-                    ? new dList(denizen.getSaves().getStringList(flagPath))
-                    : value.size() == 1 ? new Element(value.get(0).asString()) : Element.valueOf("null");
+            dObject OldValue = FlagSmartEvent.isActive() ? (value.size() > 1
+                    ? value.asList()
+                    : value.size() == 1 ? new Element(value.get(0).asString()) : new Element("null")) : null;
 
             denizen.getSaves().set(flagPath, null);
             denizen.getSaves().set(flagPath + "-expiration", null);
             valid = false;
             rebuild();
 
-            if (FlagSmartEvent.IsActive()) {
-                List<String> world_script_events = new ArrayList<String>();
+            if (FlagSmartEvent.isActive()) {
+                List<String> world_script_events = new ArrayList<>();
 
-                Map<String, dObject> context = new HashMap<String, dObject>();
+                Map<String, dObject> context = new HashMap<>();
                 dPlayer player = null;
                 if (dPlayer.matches(OldOwner)) {
                     player = dPlayer.valueOf(OldOwner);
@@ -467,21 +323,24 @@ public class FlagManager {
 
             // No index? Clear the flag and set the whole thing.
             if (index < 0) {
-                value.values.clear();
-                value.values.add((String) obj);
+                value.values = null;
+                value.size = 1;
+                value.firstValue = (String) obj;
             }
             else if (size() == 0) {
-                value.values.add((String) obj);
+                value.firstValue = (String) obj;
+                value.size = 1;
             }
             else if (index > 0) {
+                value.mustBeList();
                 if (value.values.size() > index - 1) {
-                    value.values.remove(index - 1);
-                    value.values.add(index - 1, (String) obj);
+                    value.values.set(index - 1, (String) obj);
 
                     // Index higher than currently exists? Add the item to the end of the list.
                 }
                 else {
                     value.values.add((String) obj);
+                    value.size++;
                 }
             }
             valid = true;
@@ -496,7 +355,9 @@ public class FlagManager {
          */
         public int add(Object obj) {
             checkExpired();
+            value.mustBeList();
             value.values.add((String) obj);
+            value.size++;
             valid = true;
             save();
             rebuild();
@@ -511,9 +372,11 @@ public class FlagManager {
             checkExpired();
             dList split = dList.valueOf(obj.toString());
             if (split.size() > 0) {
+                value.mustBeList();
                 for (String val : split) {
                     if (val.length() > 0) {
                         value.values.add(val);
+                        value.size++;
                     }
                 }
                 save();
@@ -526,10 +389,13 @@ public class FlagManager {
             checkExpired();
             dList split = dList.valueOf(obj.toString());
             if (split.size() > 0) {
+                value.mustBeList();
                 value.values.clear();
+                value.size = 0;
                 for (String val : split) {
                     if (val.length() > 0) {
                         value.values.add(val);
+                        value.size++;
                     }
                 }
                 save();
@@ -559,7 +425,9 @@ public class FlagManager {
          */
         public void remove(Object obj, int index) {
             checkExpired();
+            boolean isDouble = aH.matchesDouble((String) obj);
 
+            value.mustBeList();
             // No index? Match object and remove it.
             if (index <= 0 && obj != null) {
                 int x = 0;
@@ -569,17 +437,21 @@ public class FlagManager {
                     if (val.equalsIgnoreCase(String.valueOf(obj))) {
 
                         value.values.remove(x);
+                        value.size--;
                         break;
                     }
 
                     // Evaluate as number
                     try {
-                        if (Double.valueOf(val).equals(Double.valueOf((String) obj))) {
+                        if (isDouble && aH.matchesDouble(val) && Double.valueOf(val).equals(Double.valueOf((String) obj))) {
                             value.values.remove(x);
+                            value.size--;
                             break;
                         }
                     }
-                    catch (Exception e) { /* Not a valid number, continue. */ }
+                    catch (NumberFormatException e) {
+                        // Ignore
+                    }
 
                     x++;
                 }
@@ -588,6 +460,7 @@ public class FlagManager {
             }
             else if (index <= size()) {
                 value.values.remove(index - 1);
+                value.size--;
             }
 
             valid = true;
@@ -631,6 +504,8 @@ public class FlagManager {
         // entity flag changed
         // entity flag <flagname> changed
         //
+        // @Regex ^on (player |entity |npc |server )flag( [^\s]+)? changed$
+        //
         // @Warning This event will fire rapidly and not exactly when you might expect it to fire. Generally, do not use this event unless you know what you're doing.
         //
         // @Triggers when a flag is changed
@@ -648,31 +523,38 @@ public class FlagManager {
          * if you are extending the usage of Flags yourself.
          */
         public void save() {
-            String OldOwner = flagOwner;
-            String OldName = flagName;
-            List<String> oldValueList = denizen.getSaves().getStringList(flagPath);
-            dObject OldValue = oldValueList.size() > 1 ? new dList(oldValueList)
-                    : oldValueList.size() == 1 ? new Element(oldValueList.get(0)) : Element.valueOf("null");
+            String oldOwner = flagOwner;
+            String oldName = flagName;
+            dObject oldValue = null;
+            if (FlagSmartEvent.isActive()) {
+                dList oldValueList = value.asList();
+                oldValue = oldValueList.size() > 1 ? oldValueList
+                        : oldValueList.size() == 1 ? new Element(oldValueList.get(0)) : new Element("null");
+            }
 
-            denizen.getSaves().set(flagPath, value.values);
+            if (value.values != null) {
+                denizen.getSaves().set(flagPath, value.values);
+            }
+            else {
+                denizen.getSaves().set(flagPath, value.size == 0 ? null : value.firstValue);
+            }
             denizen.getSaves().set(flagPath + "-expiration", (expiration > 0 ? expiration : null));
-            rebuild();
 
-            if (FlagSmartEvent.IsActive()) {
-                List<String> world_script_events = new ArrayList<String>();
+            if (FlagSmartEvent.isActive()) {
+                List<String> world_script_events = new ArrayList<>();
 
-                Map<String, dObject> context = new HashMap<String, dObject>();
+                Map<String, dObject> context = new HashMap<>();
                 dPlayer player = null;
-                if (dPlayer.matches(OldOwner)) {
-                    player = dPlayer.valueOf(OldOwner);
+                if (dPlayer.matches(oldOwner)) {
+                    player = dPlayer.valueOf(oldOwner);
                 }
                 dNPC npc = null;
-                if (Depends.citizens != null && dNPC.matches(OldOwner)) {
-                    npc = dNPC.valueOf(OldOwner);
+                if (Depends.citizens != null && dNPC.matches(oldOwner)) {
+                    npc = dNPC.valueOf(oldOwner);
                 }
                 dEntity entity = null;
-                if (dEntity.matches(OldOwner)) {
-                    entity = dEntity.valueOf(OldOwner);
+                if (dEntity.matches(oldOwner)) {
+                    entity = dEntity.valueOf(oldOwner);
                 }
 
                 String type;
@@ -690,12 +572,12 @@ public class FlagManager {
                     type = "server";
                 }
                 world_script_events.add(type + " flag changed");
-                world_script_events.add(type + " flag " + OldName + " changed");
+                world_script_events.add(type + " flag " + oldName + " changed");
 
-                context.put("owner", Element.valueOf(OldOwner));
-                context.put("name", Element.valueOf(OldName));
-                context.put("type", Element.valueOf(type));
-                context.put("old_value", OldValue);
+                context.put("owner", new Element(oldOwner));
+                context.put("name", new Element(oldName));
+                context.put("type", new Element(type));
+                context.put("old_value", oldValue);
 
                 world_script_events.add("flag changed");
 
@@ -705,16 +587,9 @@ public class FlagManager {
 
         }
 
-        /**
-         * Returns a String value of the last item in a Flag Value. If there is only
-         * a single item in the flag, it returns it. To return the value of another
-         * item in the Flag, use 'flag.get(index).asString()'.
-         */
         @Override
         public String toString() {
             checkExpired();
-            // Possibly use reflection to check whether dList or dElement is calling this?
-            // If dList, return fl@..., if dElement, return f@...
             return (flagOwner.equalsIgnoreCase("SERVER") ? "fl@" + flagName : "fl[" + flagOwner + "]@" + flagName);
         }
 
@@ -729,6 +604,8 @@ public class FlagManager {
         // server flag <flagname> expires
         // entity flag expires
         // entity flag <flagname> expires
+        //
+        // @Regex ^on (player |entity |npc |server )flag( [^\s]+)? expires$
         //
         // @Warning This event will fire rapidly and not exactly when you might expect it to fire. Generally, do not use this event unless you know what you're doing.
         //
@@ -750,31 +627,31 @@ public class FlagManager {
             rebuild();
             if (denizen.getSaves().contains(flagPath + "-expiration")) {
                 if (expiration > 1 && expiration < DenizenCore.currentTimeMillis) {
-                    String OldOwner = flagOwner;
-                    String OldName = flagName;
-                    dObject OldValue = value.size() > 1
-                            ? new dList(denizen.getSaves().getStringList(flagPath))
-                            : value.size() == 1 ? new Element(value.get(0).asString()) : Element.valueOf("null");
+                    String oldOwner = flagOwner;
+                    String oldName = flagName;
+                    dObject oldValue = FlagSmartEvent.isActive() ? (value.size() > 1
+                            ? value.asList()
+                            : value.size() == 1 ? new Element(value.get(0).asString()) : new Element("null")) : null;
                     denizen.getSaves().set(flagPath + "-expiration", null);
                     denizen.getSaves().set(flagPath, null);
                     valid = false;
                     rebuild();
                     //dB.log('\'' + flagName + "' has expired! " + flagPath);
-                    if (FlagSmartEvent.IsActive()) {
-                        List<String> world_script_events = new ArrayList<String>();
+                    if (FlagSmartEvent.isActive()) {
+                        List<String> world_script_events = new ArrayList<>();
 
-                        Map<String, dObject> context = new HashMap<String, dObject>();
+                        Map<String, dObject> context = new HashMap<>();
                         dPlayer player = null;
-                        if (dPlayer.matches(OldOwner)) {
-                            player = dPlayer.valueOf(OldOwner);
+                        if (dPlayer.matches(oldOwner)) {
+                            player = dPlayer.valueOf(oldOwner);
                         }
                         dNPC npc = null;
-                        if (Depends.citizens != null && dNPC.matches(OldOwner)) {
-                            npc = dNPC.valueOf(OldOwner);
+                        if (Depends.citizens != null && dNPC.matches(oldOwner)) {
+                            npc = dNPC.valueOf(oldOwner);
                         }
                         dEntity entity = null;
-                        if (dEntity.matches(OldOwner)) {
-                            entity = dEntity.valueOf(OldOwner);
+                        if (dEntity.matches(oldOwner)) {
+                            entity = dEntity.valueOf(oldOwner);
                         }
 
                         String type;
@@ -792,12 +669,12 @@ public class FlagManager {
                             type = "server";
                         }
                         world_script_events.add(type + " flag expires");
-                        world_script_events.add(type + " flag " + OldName + " expires");
+                        world_script_events.add(type + " flag " + oldName + " expires");
 
-                        context.put("owner", Element.valueOf(OldOwner));
-                        context.put("name", Element.valueOf(OldName));
-                        context.put("type", Element.valueOf(type));
-                        context.put("old_value", OldValue);
+                        context.put("owner", new Element(oldOwner));
+                        context.put("name", new Element(oldName));
+                        context.put("type", new Element(type));
+                        context.put("old_value", oldValue);
 
                         world_script_events.add("flag expires");
 
@@ -811,7 +688,7 @@ public class FlagManager {
         }
 
         public Duration expiration() {
-            return new Duration((double) (expiration - DenizenCore.currentTimeMillis) / 1000);
+            return new Duration((expiration - DenizenCore.currentTimeMillis) / 1000.0);
         }
 
         /**
@@ -857,12 +734,20 @@ public class FlagManager {
             if (denizen.getSaves().contains(flagPath + "-expiration")) {
                 this.expiration = (denizen.getSaves().getLong(flagPath + "-expiration"));
             }
-            List<String> cval = denizen.getSaves().getStringList(flagPath);
-            if (cval == null) {
-                cval = new ArrayList<String>();
-                cval.add(denizen.getSaves().getString(flagPath, ""));
+            Object obj = denizen.getSaves().get(flagPath);
+            if (obj instanceof List) {
+                ArrayList<String> val = new ArrayList<>(((List) obj).size());
+                for (Object subObj : (List) obj) {
+                    val.add(String.valueOf(subObj));
+                }
+                value = new Value(val);
             }
-            value = new Value(cval);
+            else if (obj == null || obj.toString().length() == 0) {
+                value = new Value();
+            }
+            else {
+                value = new Value(obj.toString());
+            }
             return this;
         }
 
@@ -899,7 +784,7 @@ public class FlagManager {
                 case MULTIPLY:
                 case DIVIDE:
                     double currentValue = get(index).asDouble();
-                    set(CoreUtilities.doubleToString(math(currentValue, Double.valueOf(value.asString()), action)), index);
+                    set(CoreUtilities.doubleToString(math(currentValue, value.asDouble(), action)), index);
                     break;
 
                 case SET_BOOLEAN:
@@ -964,14 +849,60 @@ public class FlagManager {
      */
     public class Value {
 
+        private String firstValue;
         private List<String> values;
-        private int index = -1;
+        private int index;
+        private int size;
 
-        private Value(List<String> values) {
-            this.values = values;
-            if (this.values == null) {
-                this.values = new ArrayList<String>();
+        public Value() {
+            size = 0;
+            index = 0;
+        }
+
+        public void mustBeList() {
+            if (values == null) {
+                values = new ArrayList<>();
+                if (size != 0) {
+                    values.add(firstValue);
+                }
             }
+        }
+
+        public void fixSize() {
+            if (values != null) {
+                size = values.size();
+            }
+        }
+
+        public Value(String oneValue) {
+            this.firstValue = oneValue;
+            size = 1;
+            index = 1;
+        }
+
+        public Value(List<String> values) {
+            this.values = values;
+            if (values == null) {
+                size = 0;
+                index = 0;
+            }
+            else {
+                size = values.size();
+                index = values.size() - 1;
+            }
+        }
+
+        private String getValue() {
+            if (values == null) {
+                if (size == 0) {
+                    return "";
+                }
+                if (index == 0) {
+                    return firstValue;
+                }
+                return "";
+            }
+            return values.get(index);
         }
 
         /**
@@ -991,13 +922,7 @@ public class FlagManager {
          * whether a value exists, as FALSE is also returned if the value is not set.
          */
         public boolean asBoolean() {
-            adjustIndex();
-            try {
-                return !values.get(index).equalsIgnoreCase("FALSE");
-            }
-            catch (Exception e) {
-                return false;
-            }
+            return !getValue().equalsIgnoreCase("false");
         }
 
         /**
@@ -1005,11 +930,10 @@ public class FlagManager {
          * or the value is not convertible to a Double, 0 is returned.
          */
         public double asDouble() {
-            adjustIndex();
             try {
-                return Double.valueOf(values.get(index));
+                return Double.valueOf(getValue());
             }
-            catch (Exception e) {
+            catch (NumberFormatException e) {
                 return 0;
             }
         }
@@ -1020,11 +944,10 @@ public class FlagManager {
          * or the value is not convertible to a Double, 0 is returned.
          */
         public int asInteger() {
-            adjustIndex();
             try {
-                return Double.valueOf(values.get(index)).intValue();
+                return Double.valueOf(getValue()).intValue();
             }
-            catch (Exception e) {
+            catch (NumberFormatException e) {
                 return 0;
             }
         }
@@ -1035,14 +958,13 @@ public class FlagManager {
          * exist, "" is returned.
          */
         public String asCommaSeparatedList() {
-            adjustIndex();
-            String returnList = "";
-
-            for (String string : values) {
-                returnList = returnList + string + ", ";
+            if (values == null) {
+                if (size == 0) {
+                    return "";
+                }
+                return firstValue;
             }
-
-            return returnList.substring(0, returnList.length() - 2);
+            return String.join(", ", values);
         }
 
         /**
@@ -1051,18 +973,25 @@ public class FlagManager {
          * exist, "" is returned.
          */
         public dList asList() {
-            adjustIndex();
+            if (values == null) {
+                dList toReturn = new dList();
+                if (size != 0) {
+                    toReturn.add(firstValue);
+                }
+                return toReturn;
+            }
             return new dList(values);
         }
 
-        /**
-         * Returns a String value of the entirety of the values
-         * contained as a dScript list, with a prefix added to
-         * the start of each value. If the value doesn't
-         * exist, "" is returned.
-         */
         public dList asList(String prefix) {
-            adjustIndex();
+            if (values == null) {
+                dList toReturn = new dList();
+                toReturn.setPrefix(prefix);
+                if (size != 0) {
+                    toReturn.add(firstValue);
+                }
+                return toReturn;
+            }
             return new dList(values, prefix);
         }
 
@@ -1071,13 +1000,7 @@ public class FlagManager {
          * the value doesn't exist, "" is returned.
          */
         public String asString() {
-            adjustIndex();
-            try {
-                return values.get(index);
-            }
-            catch (Exception e) {
-                return "";
-            }
+            return getValue();
         }
 
         /**
@@ -1085,52 +1008,7 @@ public class FlagManager {
          * contained in a dScript list.
          */
         public int asSize() {
-            adjustIndex();
-            return values.size();
-        }
-
-        /**
-         * Returns an instance of the appropriate Object, as detected by this method.
-         * Should check if instanceof Integer, Double, Boolean, List, or String.
-         */
-        public Object asAutoDetectedObject() {
-            adjustIndex();
-            String arg = values.get(index);
-
-            try {
-                // If an Integer
-                if (aH.matchesInteger(arg)) {
-                    return aH.getIntegerFrom(arg);
-                }
-
-                // If a Double
-                else if (aH.matchesDouble(arg)) {
-                    return aH.getDoubleFrom(arg);
-                }
-
-                // If a Boolean
-                else if (arg.equalsIgnoreCase("true")) {
-                    return true;
-                }
-                else if (arg.equalsIgnoreCase("false")) {
-                    return false;
-                }
-
-                // If a List<Object>
-                else if (arg.contains("|")) {
-                    List<String> toList = new ArrayList<String>();
-                    return new dList(toList);
-                }
-
-                // Must be a String
-                else {
-                    return arg;
-                }
-            }
-            catch (Exception e) {
-                return "";
-            }
-
+            return size;
         }
 
         /**
@@ -1147,21 +1025,20 @@ public class FlagManager {
          * Determines if the flag is empty.
          */
         public boolean isEmpty() {
-            if (values.isEmpty()) {
+            if (size == 0) {
                 return true;
             }
-            adjustIndex();
-            if (this.size() < index + 1) {
+            if (index >= size) {
                 return true;
             }
-            return values.get(index).equals("");
+            return getValue().equals("");
         }
 
         /**
          * Used internally. Returns the size of the current values list.
          */
-        private int size() {
-            return values.size();
+        public int size() {
+            return size;
         }
     }
 }

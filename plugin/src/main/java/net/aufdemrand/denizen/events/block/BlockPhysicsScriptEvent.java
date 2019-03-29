@@ -3,12 +3,10 @@ package net.aufdemrand.denizen.events.block;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.MaterialCompat;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,10 +16,11 @@ public class BlockPhysicsScriptEvent extends BukkitScriptEvent implements Listen
 
     // <--[event]
     // @Events
-    // block physics (in <area>)
-    // <material> physics (in <area>)
+    // block physics
+    // <material> physics
     //
-    // @Regex ^on [^\s]+ physics( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ physics$
+    // @Switch in <area>
     //
     // @Warning This event may fire very rapidly.
     //
@@ -55,14 +54,12 @@ public class BlockPhysicsScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
         if (!runInCheck(path, location)) {
             return false;
         }
 
-        String mat = CoreUtilities.getXthArg(0, lower);
+        String mat = path.eventArgLowerAt(0);
         return tryMaterial(material, mat);
 
     }
@@ -70,16 +67,6 @@ public class BlockPhysicsScriptEvent extends BukkitScriptEvent implements Listen
     @Override
     public String getName() {
         return "BlockPhysics";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BlockPhysicsEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -106,11 +93,9 @@ public class BlockPhysicsScriptEvent extends BukkitScriptEvent implements Listen
             return;
         }
         location = new dLocation(event.getBlock().getLocation());
-        new_material = dMaterial.getMaterialFrom(changedType);
-        material = dMaterial.getMaterialFrom(location.getBlock().getType(), location.getBlock().getData());
-        cancelled = event.isCancelled();
+        new_material = new dMaterial(changedType);
+        material = new dMaterial(location.getBlock());
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

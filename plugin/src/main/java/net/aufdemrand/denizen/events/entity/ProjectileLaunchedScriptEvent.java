@@ -3,11 +3,9 @@ package net.aufdemrand.denizen.events.entity;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,10 +15,11 @@ public class ProjectileLaunchedScriptEvent extends BukkitScriptEvent implements 
 
     // <--[event]
     // @Events
-    // projectile launched (in <area>)
-    // <entity> launched (in <area>)
+    // projectile launched
+    // <entity> launched
     //
-    // @Regex ^on [^\s]+ launched( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ launched$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -49,9 +48,7 @@ public class ProjectileLaunchedScriptEvent extends BukkitScriptEvent implements 
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String projTest = CoreUtilities.getXthArg(0, lower);
+        String projTest = path.eventArgLowerAt(0);
 
         if (!projTest.equals("projectile") && !tryEntity(projectile, projTest)) {
             return false;
@@ -67,16 +64,6 @@ public class ProjectileLaunchedScriptEvent extends BukkitScriptEvent implements 
     @Override
     public String getName() {
         return "ProjectileLaunched";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        ProjectileLaunchEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -98,10 +85,8 @@ public class ProjectileLaunchedScriptEvent extends BukkitScriptEvent implements 
         dEntity.rememberEntity(projectile);
         this.projectile = new dEntity(projectile);
         location = new dLocation(event.getEntity().getLocation());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
+        fire(event);
         dEntity.forgetEntity(projectile);
-        event.setCancelled(cancelled);
     }
 }

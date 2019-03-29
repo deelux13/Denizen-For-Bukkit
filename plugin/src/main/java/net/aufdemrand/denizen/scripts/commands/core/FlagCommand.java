@@ -9,7 +9,6 @@ import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizencore.DenizenCore;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Duration;
 import net.aufdemrand.denizencore.objects.Element;
@@ -54,7 +53,7 @@ public class FlagCommand extends AbstractCommand implements Listener {
             else if (!scriptEntry.hasObject("flag_target")
                     && arg.matches("global", "server")) {
                 specified_target = true;
-                scriptEntry.addObject("flag_target", Element.SERVER);
+                scriptEntry.addObject("flag_target", new Element("server"));
 
             }
             else if (!scriptEntry.hasObject("flag_target")
@@ -101,7 +100,7 @@ public class FlagCommand extends AbstractCommand implements Listener {
             else if (!scriptEntry.hasObject("flag_name") &&
                     arg.raw_value.split(":", 3).length == 1) {
                 scriptEntry.addObject("action", FlagManager.Action.SET_BOOLEAN);
-                scriptEntry.addObject("value", Element.TRUE);
+                scriptEntry.addObject("value", new Element(true));
                 scriptEntry.addObject("flag_name", arg.asElement());
             }
 
@@ -122,11 +121,11 @@ public class FlagCommand extends AbstractCommand implements Listener {
                 }
                 else if (flagArgs[1].equals("!")) {
                     scriptEntry.addObject("action", FlagManager.Action.DELETE);
-                    scriptEntry.addObject("value", Element.FALSE);
+                    scriptEntry.addObject("value", new Element(false));
                 }
                 else if (flagArgs[1].equals("<-")) {
                     scriptEntry.addObject("action", FlagManager.Action.REMOVE);
-                    scriptEntry.addObject("value", Element.FALSE);
+                    scriptEntry.addObject("value", new Element(false));
                 }
                 else {
                     // No ACTION, we're just setting a value...
@@ -195,7 +194,7 @@ public class FlagCommand extends AbstractCommand implements Listener {
 
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         dObject flag_target = scriptEntry.getdObject("flag_target");
         Duration duration = (Duration) scriptEntry.getObject("duration");
@@ -242,7 +241,8 @@ public class FlagCommand extends AbstractCommand implements Listener {
             flag = DenizenAPI.getCurrentInstance().flagManager().getEntityFlag((dEntity) flag_target, name.asString());
         }
         else {
-            throw new CommandExecutionException("Could not fetch a flag for this entity: " + flag_target.debug());
+            dB.echoError("Could not fetch a flag for this entity: " + flag_target.debug());
+            return;
         }
 
         // Do the action!

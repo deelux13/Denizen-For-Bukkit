@@ -438,7 +438,7 @@ public class EntityAreaEffectCloud implements Property {
         // <e@entity.custom_effects>
         // -->
         if (mechanism.matches("custom_effects")) {
-            dList list = mechanism.getValue().asType(dList.class);
+            dList list = mechanism.valueAsType(dList.class);
             getHelper().clearEffects();
 
             for (String item : list) {
@@ -491,6 +491,7 @@ public class EntityAreaEffectCloud implements Property {
         // <e@entity.base_potion.type>
         // <e@entity.base_potion.is_upgraded>
         // <e@entity.base_potion.is_extended>
+        // <server.list_potion_types>
         // -->
         if (mechanism.matches("base_potion")) {
             List<String> data = CoreUtilities.split(mechanism.getValue().asString().toUpperCase(), ',');

@@ -3,14 +3,12 @@ package net.aufdemrand.denizen.events.entity;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
@@ -19,10 +17,11 @@ public class EntityFoodLevelChangeScriptEvent extends BukkitScriptEvent implemen
 
     // <--[event]
     // @Events
-    // entity changes food level (in <area>)
-    // <entity> changes food level (in <area>)
+    // entity changes food level
+    // <entity> changes food level
     //
-    // @Regex ^on [^\s]+ changes food level( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ changes food level$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -57,9 +56,7 @@ public class EntityFoodLevelChangeScriptEvent extends BukkitScriptEvent implemen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String target = CoreUtilities.getXthArg(0, lower);
+        String target = path.eventArgLowerAt(0);
 
         if (!tryEntity(entity, target)) {
             return false;
@@ -75,16 +72,6 @@ public class EntityFoodLevelChangeScriptEvent extends BukkitScriptEvent implemen
     @Override
     public String getName() {
         return "FoodLevelChanged";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        FoodLevelChangeEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -117,10 +104,8 @@ public class EntityFoodLevelChangeScriptEvent extends BukkitScriptEvent implemen
     public void onEntityFoodLevelChanged(FoodLevelChangeEvent event) {
         entity = new dEntity(event.getEntity());
         food = event.getFoodLevel();
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setFoodLevel(food);
     }
 }

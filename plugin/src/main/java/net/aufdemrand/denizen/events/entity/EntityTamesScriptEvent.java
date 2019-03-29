@@ -3,12 +3,10 @@ package net.aufdemrand.denizen.events.entity;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,12 +16,13 @@ public class EntityTamesScriptEvent extends BukkitScriptEvent implements Listene
 
     // <--[event]
     // @Events
-    // entity tamed (in <area>)
-    // <entity> tamed (in <area>)
-    // player tames entity (in <area>)
-    // player tames <entity> (in <area>)
+    // entity tamed
+    // <entity> tamed
+    // player tames entity
+    // player tames <entity>
     //
-    // @Regex ^on [^\s]+ (tames [^\s]+|tamed)( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ (tames [^\s]+|tamed)$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -55,11 +54,9 @@ public class EntityTamesScriptEvent extends BukkitScriptEvent implements Listene
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String cmd = CoreUtilities.getXthArg(1, lower);
-        String ownerTest = cmd.equals("tames") ? CoreUtilities.getXthArg(0, lower) : CoreUtilities.getXthArg(2, lower);
-        String tamed = cmd.equals("tamed") ? CoreUtilities.getXthArg(0, lower) : CoreUtilities.getXthArg(2, lower);
+        String cmd = path.eventArgLowerAt(1);
+        String ownerTest = cmd.equals("tames") ? path.eventArgLowerAt(0) : path.eventArgLowerAt(2);
+        String tamed = cmd.equals("tamed") ? path.eventArgLowerAt(0) : path.eventArgLowerAt(2);
 
         if (!tryEntity(owner, ownerTest) || !tryEntity(entity, tamed)) {
             return false;
@@ -75,16 +72,6 @@ public class EntityTamesScriptEvent extends BukkitScriptEvent implements Listene
     @Override
     public String getName() {
         return "EntityTames";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityTameEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -114,10 +101,8 @@ public class EntityTamesScriptEvent extends BukkitScriptEvent implements Listene
     public void onEntityTames(EntityTameEvent event) {
         entity = new dEntity(event.getEntity());
         owner = new dEntity((Entity) event.getOwner());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 
 }

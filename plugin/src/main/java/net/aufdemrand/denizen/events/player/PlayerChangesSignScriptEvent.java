@@ -3,14 +3,12 @@ package net.aufdemrand.denizen.events.player;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.*;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.tags.core.EscapeTags;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
@@ -23,10 +21,11 @@ public class PlayerChangesSignScriptEvent extends BukkitScriptEvent implements L
 
     // <--[event]
     // @Events
-    // player changes sign (in <area>)
-    // player changes <material> (in <area>)
+    // player changes sign
+    // player changes <material>
     //
-    // @Regex ^on player changes [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player changes [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -67,10 +66,8 @@ public class PlayerChangesSignScriptEvent extends BukkitScriptEvent implements L
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        String mat = CoreUtilities.getXthArg(2, lower);
+        String mat = path.eventArgLowerAt(2);
         if (!mat.equals("sign")
                 && (!(event.getBlock().getState() instanceof Sign)
                 && (!mat.equals(material.identifyNoIdentifier()) && !mat.equals(material.identifyFullNoIdentifier())))) {
@@ -87,16 +84,6 @@ public class PlayerChangesSignScriptEvent extends BukkitScriptEvent implements L
     @Override
     public String getName() {
         return "PlayerChangesSign";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        SignChangeEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -149,16 +136,14 @@ public class PlayerChangesSignScriptEvent extends BukkitScriptEvent implements L
             return;
         }
         Sign sign = (Sign) state;
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
+        material = new dMaterial(event.getBlock());
         location = new dLocation(event.getBlock().getLocation());
         cuboids = null;
         old_sign = new dList(Arrays.asList(sign.getLines()));
         new_sign = new dList(Arrays.asList(event.getLines()));
         new_text = null;
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         if (new_text != null) {
             for (int i = 0; i < 4 && i < new_text.size(); i++) {
                 event.setLine(i, EscapeTags.unEscape(new_text.get(i)));

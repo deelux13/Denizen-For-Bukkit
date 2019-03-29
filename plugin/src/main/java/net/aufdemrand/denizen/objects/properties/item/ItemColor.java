@@ -1,7 +1,5 @@
 package net.aufdemrand.denizen.objects.properties.item;
 
-import net.aufdemrand.denizen.nms.NMSHandler;
-import net.aufdemrand.denizen.nms.NMSVersion;
 import net.aufdemrand.denizen.objects.dColor;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizencore.objects.Mechanism;
@@ -22,10 +20,9 @@ public class ItemColor implements Property {
                 || ((dItem) item).getItemStack().getType() == Material.LEATHER_CHESTPLATE
                 || ((dItem) item).getItemStack().getType() == Material.LEATHER_HELMET
                 || ((dItem) item).getItemStack().getType() == Material.LEATHER_LEGGINGS
-                || (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)
-                && (((dItem) item).getItemStack().getType() == Material.POTION
+                || ((dItem) item).getItemStack().getType() == Material.POTION
                 || ((dItem) item).getItemStack().getType() == Material.SPLASH_POTION
-                || ((dItem) item).getItemStack().getType() == Material.LINGERING_POTION)));
+                || ((dItem) item).getItemStack().getType() == Material.LINGERING_POTION);
     }
 
     public static ItemColor getFrom(dObject _item) {
@@ -69,10 +66,9 @@ public class ItemColor implements Property {
         // -->
         if (attribute.startsWith("color") || attribute.startsWith("dye_color")) {
             Material mat = item.getItemStack().getType();
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)
-                    && (mat == Material.POTION
+            if (mat == Material.POTION
                     || mat == Material.LINGERING_POTION
-                    || mat == Material.SPLASH_POTION)) {
+                    || mat == Material.SPLASH_POTION) {
                 PotionMeta pm = (PotionMeta) item.getItemStack().getItemMeta();
                 if (!pm.hasColor()) {
                     return new dColor(Color.WHITE).getAttribute(attribute.fulfill((1)));
@@ -89,10 +85,9 @@ public class ItemColor implements Property {
     @Override
     public String getPropertyString() {
         Material mat = item.getItemStack().getType();
-        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)
-                && (mat == Material.POTION
+        if (mat == Material.POTION
                 || mat == Material.LINGERING_POTION
-                || mat == Material.SPLASH_POTION)) {
+                || mat == Material.SPLASH_POTION) {
             PotionMeta pm = (PotionMeta) item.getItemStack().getItemMeta();
             if (!pm.hasColor()) {
                 return null;
@@ -122,12 +117,11 @@ public class ItemColor implements Property {
         // -->
         if ((mechanism.matches("dye") || mechanism.matches("dye_color")
                 || mechanism.matches("color")) && (mechanism.requireObject(dColor.class))) {
-            dColor color = mechanism.getValue().asType(dColor.class);
+            dColor color = mechanism.valueAsType(dColor.class);
             Material mat = item.getItemStack().getType();
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)
-                    && (mat == Material.POTION
+            if (mat == Material.POTION
                     || mat == Material.LINGERING_POTION
-                    || mat == Material.SPLASH_POTION)) {
+                    || mat == Material.SPLASH_POTION) {
                 PotionMeta meta = (PotionMeta) item.getItemStack().getItemMeta();
                 meta.setColor(color.getColor());
                 item.getItemStack().setItemMeta(meta);

@@ -75,7 +75,7 @@ public class ItemAttributeNBT implements Property {
         dList list = new dList();
         if (nbtKeys != null) {
             for (CustomNBT.AttributeReturn atr : nbtKeys) {
-                list.add(EscapeTags.Escape(atr.attr) + "/" + EscapeTags.Escape(atr.slot) + "/" + atr.op + "/" + atr.amt);
+                list.add(EscapeTags.escape(atr.attr) + "/" + EscapeTags.escape(atr.slot) + "/" + atr.op + "/" + atr.amt);
             }
         }
         return list;
@@ -114,7 +114,7 @@ public class ItemAttributeNBT implements Property {
                 dB.echoError("Cannot apply NBT to AIR!");
                 return;
             }
-            dList list = mechanism.getValue().asType(dList.class);
+            dList list = mechanism.valueAsType(dList.class);
             ItemStack itemStack = item.getItemStack();
             itemStack = CustomNBT.clearNBT(itemStack, CustomNBT.KEY_ATTRIBUTES);
             for (String string : list) {

@@ -6,14 +6,12 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dInventory;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
@@ -24,10 +22,11 @@ public class ItemEnchantedScriptEvent extends BukkitScriptEvent implements Liste
 
     // <--[event]
     // @Events
-    // item enchanted (in <area>)
-    // <item> enchanted (in <area>)
+    // item enchanted
+    // <item> enchanted
     //
-    // @Regex ^on [^\s]+ enchanted( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ enchanted$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -71,9 +70,7 @@ public class ItemEnchantedScriptEvent extends BukkitScriptEvent implements Liste
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String itemTest = CoreUtilities.getXthArg(0, lower);
+        String itemTest = path.eventArgLowerAt(0);
 
         if (!itemTest.equals("item") && !tryItem(item, itemTest)) {
             return false;
@@ -89,16 +86,6 @@ public class ItemEnchantedScriptEvent extends BukkitScriptEvent implements Liste
     @Override
     public String getName() {
         return "ItemEnchanted";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EnchantItemEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -160,12 +147,10 @@ public class ItemEnchantedScriptEvent extends BukkitScriptEvent implements Liste
         item = new dItem(event.getItem());
         button = new Element(event.whichButton());
         cost = event.getExpLevelCost();
-        cancelled = event.isCancelled();
         itemEdited = false;
         this.event = event;
         enchantsRes = null;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setExpLevelCost(cost);
         if (itemEdited) {
             event.getItem().setItemMeta(item.getItemStack().getItemMeta());

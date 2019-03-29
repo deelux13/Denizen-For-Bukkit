@@ -6,13 +6,11 @@ import net.aufdemrand.denizen.objects.dCuboid;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityInteractEvent;
@@ -21,12 +19,13 @@ public class EntityInteractScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // <entity> interacts with <material> (in <area>)
-    // entity interacts with <material> (in <area>)
-    // <entity> interacts with block (in <area>)
-    // entity interacts with block (in <area>)
+    // <entity> interacts with <material>
+    // entity interacts with <material>
+    // <entity> interacts with block
+    // entity interacts with block
     //
-    // @Regex ^on [^\s]+ interacts with [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ interacts with [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -57,14 +56,12 @@ public class EntityInteractScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(0, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(0))) {
             return false;
         }
 
-        if (!tryMaterial(material, CoreUtilities.getXthArg(3, lower))) {
+        if (!tryMaterial(material, path.eventArgLowerAt(3))) {
             return false;
         }
 
@@ -78,16 +75,6 @@ public class EntityInteractScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "EntityInteracts";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityInteractEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -125,12 +112,10 @@ public class EntityInteractScriptEvent extends BukkitScriptEvent implements List
     public void onEntityInteract(EntityInteractEvent event) {
         entity = new dEntity(event.getEntity());
         location = new dLocation(event.getBlock().getLocation());
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
+        material = new dMaterial(event.getBlock());
         cuboids = null;
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 
 }

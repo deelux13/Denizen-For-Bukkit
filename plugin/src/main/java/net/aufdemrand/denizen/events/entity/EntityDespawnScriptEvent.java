@@ -13,10 +13,11 @@ public class EntityDespawnScriptEvent extends BukkitScriptEvent {
 
     // <--[event]
     // @Events
-    // entity despawns (in <area>)
-    // <entity> despawns (in <area>)
+    // entity despawns
+    // <entity> despawns
     //
-    // @Regex ^on [^\s]+ despawns( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ despawns$
+    // @Switch in <area>
     //
     // @Warning this event fires very rapidly.
     //
@@ -48,15 +49,13 @@ public class EntityDespawnScriptEvent extends BukkitScriptEvent {
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String target = CoreUtilities.getXthArg(0, lower);
+        String target = path.eventArgLowerAt(0);
 
         if (!tryEntity(entity, target)) {
             return false;
         }
 
-        if (!checkSwitch(lower, "cause", CoreUtilities.toLowerCase(cause.asString()))) {
+        if (!path.checkSwitch("cause", CoreUtilities.toLowerCase(cause.asString()))) {
             return false;
         }
 
@@ -70,14 +69,6 @@ public class EntityDespawnScriptEvent extends BukkitScriptEvent {
     @Override
     public String getName() {
         return "EntityDespawn";
-    }
-
-    @Override
-    public void init() {
-    }
-
-    @Override
-    public void destroy() {
     }
 
     @Override

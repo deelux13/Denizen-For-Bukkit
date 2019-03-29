@@ -3,6 +3,7 @@ package net.aufdemrand.denizen.objects;
 import net.aufdemrand.denizen.Settings;
 import net.aufdemrand.denizen.nms.NMSHandler;
 import net.aufdemrand.denizen.nms.NMSVersion;
+import net.aufdemrand.denizen.nms.abstracts.ModernBlockData;
 import net.aufdemrand.denizen.nms.util.jnbt.StringTag;
 import net.aufdemrand.denizen.objects.notable.NotableManager;
 import net.aufdemrand.denizen.objects.properties.item.*;
@@ -11,12 +12,12 @@ import net.aufdemrand.denizen.scripts.containers.core.ItemScriptContainer;
 import net.aufdemrand.denizen.scripts.containers.core.ItemScriptHelper;
 import net.aufdemrand.denizen.tags.BukkitTagContext;
 import net.aufdemrand.denizen.utilities.MaterialCompat;
+import net.aufdemrand.denizen.utilities.blocks.OldMaterialsHelper;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizencore.objects.*;
 import net.aufdemrand.denizencore.objects.notable.Notable;
 import net.aufdemrand.denizencore.objects.notable.Note;
 import net.aufdemrand.denizencore.objects.properties.PropertyParser;
-import net.aufdemrand.denizencore.scripts.ScriptEntry;
 import net.aufdemrand.denizencore.scripts.ScriptRegistry;
 import net.aufdemrand.denizencore.tags.Attribute;
 import net.aufdemrand.denizencore.tags.TagContext;
@@ -28,6 +29,7 @@ import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.material.MaterialData;
 
@@ -501,9 +503,9 @@ public class dItem implements dObject, Notable, Adjustable {
 
     public dMaterial getMaterial() {
         if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_13_R2)) {
-            return dMaterial.getMaterialFrom(getItemStack().getType());
+            return new dMaterial(getItemStack().getType());
         }
-        return dMaterial.getMaterialFrom(getItemStack().getType(), getItemStack().getData().getData());
+        return OldMaterialsHelper.getMaterialFrom(getItemStack().getType(), getItemStack().getData().getData());
     }
 
     public String getMaterialName() {
@@ -589,7 +591,7 @@ public class dItem implements dObject, Notable, Adjustable {
         else if (NMSHandler.getVersion().isAtMost(NMSVersion.v1_12_R1) && (item.getDurability() >= 16 || item.getDurability() < 0) && item.getType() != Material.AIR) {
             return "i@" + getMaterial().realName() + "," + item.getDurability() + PropertyParser.getPropertiesString(this);
         }
-        return "i@" + getMaterial().identify().replace("m@", "") + PropertyParser.getPropertiesString(this);
+        return "i@" + getMaterial().identifyNoPropertiesNoIdentifier().replace("m@", "") + PropertyParser.getPropertiesString(this);
     }
 
 
@@ -676,6 +678,34 @@ public class dItem implements dObject, Notable, Adjustable {
                 dB.echoError("Material ID and data magic number support is deprecated and WILL be removed in a future release.");
                 return new Element(((dItem) object).getItemStack().getData().getData())
                         .getAttribute(attribute.fulfill(1));
+            }
+        });
+
+        // <--[tag]
+        // @attribute <i@item.with[<mechanism>=<value>;...]>
+        // @returns dItem
+        // @group properties
+        // @description
+        // Returns a copy of the item with mechanism adjustments applied.
+        // -->
+        registerTag("with", new TagRunnable() {
+            @Override
+            public String run(Attribute attribute, dObject object) {
+                if (!attribute.hasContext(1)) {
+                    dB.echoError("i@item.with[...] tag must have an input mechanism list.");
+                }
+                dItem item = new dItem(((dItem) object).getItemStack().clone());
+                List<String> properties = ObjectFetcher.separateProperties("[" + attribute.getContext(1) + "]");
+                for (int i = 1; i < properties.size(); i++) {
+                    List<String> data = CoreUtilities.split(properties.get(i), '=', 2);
+                    if (data.size() != 2) {
+                        dB.echoError("Invalid property string '" + properties.get(i) + "'!");
+                    }
+                    else {
+                        item.safeApplyProperty(new Mechanism(new Element(data.get(0)), new Element((data.get(1)).replace('‑', ';')), attribute.context));
+                    }
+                }
+                return item.getAttribute(attribute.fulfill(1));
             }
         });
 
@@ -817,7 +847,13 @@ public class dItem implements dObject, Notable, Adjustable {
         registerTag("material", new TagRunnable() {
             @Override
             public String run(Attribute attribute, dObject object) {
-                return ((dItem) object).getMaterial().getAttribute(attribute.fulfill(1));
+                dItem item = (dItem) object;
+                if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_13_R2) &&
+                        item.getItemStack().hasItemMeta() && item.getItemStack().getItemMeta() instanceof BlockStateMeta) {
+                    return new dMaterial(new ModernBlockData(((BlockStateMeta) item.getItemStack().getItemMeta()).getBlockState()))
+                            .getAttribute(attribute.fulfill(1));
+                }
+                return item.getMaterial().getAttribute(attribute.fulfill(1));
             }
         });
 
@@ -1065,6 +1101,10 @@ public class dItem implements dObject, Notable, Adjustable {
 
 
     public void applyProperty(Mechanism mechanism) {
+        if (NotableManager.isExactSavedObject(this)) {
+            dB.echoError("Cannot apply properties to noted objects.");
+            return;
+        }
         adjust(mechanism);
     }
 

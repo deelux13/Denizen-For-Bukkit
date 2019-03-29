@@ -4,7 +4,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
-import net.aufdemrand.denizen.nms.Handler_v1_13_R2;
 import net.aufdemrand.denizen.nms.NMSHandler;
 import net.aufdemrand.denizen.nms.impl.ProfileEditor_v1_13_R2;
 import net.aufdemrand.denizen.nms.impl.entities.EntityFakePlayer_v1_13_R2;
@@ -17,6 +16,7 @@ import net.aufdemrand.denizen.nms.impl.packets.PacketOutWindowItems_v1_13_R2;
 import net.aufdemrand.denizen.nms.interfaces.packets.PacketHandler;
 import net.aufdemrand.denizen.nms.interfaces.packets.PacketOutSpawnEntity;
 import net.aufdemrand.denizen.nms.util.ReflectionHelper;
+import net.aufdemrand.denizencore.utilities.debugging.dB;
 import net.minecraft.server.v1_13_R2.*;
 import net.minecraft.server.v1_13_R2.PacketPlayOutPlayerInfo.EnumPlayerInfoAction;
 import org.bukkit.Bukkit;
@@ -31,10 +31,10 @@ import java.util.UUID;
 
 public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
 
-    private final NetworkManager oldManager;
-    private final DenizenPacketListener_v1_13_R2 packetListener;
-    private final EntityPlayer player;
-    private final PacketHandler packetHandler;
+    public final NetworkManager oldManager;
+    public final DenizenPacketListener_v1_13_R2 packetListener;
+    public final EntityPlayer player;
+    public final PacketHandler packetHandler;
 
     public DenizenNetworkManager_v1_13_R2(EntityPlayer entityPlayer, NetworkManager oldManager, PacketHandler packetHandler) {
         super(getProtocolDirection(oldManager));
@@ -119,7 +119,7 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
             return reter;
         }
         catch (Exception e) {
-            e.printStackTrace();
+            dB.echoError(e);
             return null;
         }
     }
@@ -145,19 +145,19 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
                     oldManager.sendPacket(packet, genericfuturelistener);
                 }
                 else {
-                    if (!((Handler_v1_13_R2) NMSHandler.getInstance()).attachmentsA.containsKey(e.getUniqueID())
-                            || ((Handler_v1_13_R2) NMSHandler.getInstance()).attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
+                    if (!NMSHandler.getInstance().attachmentsA.containsKey(e.getUniqueID())
+                            || NMSHandler.getInstance().attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
                         oldManager.sendPacket(packet, genericfuturelistener);
                     }
-                    UUID att = ((Handler_v1_13_R2) NMSHandler.getInstance()).attachments2.get(e.getUniqueID());
+                    UUID att = NMSHandler.getInstance().attachments2.get(e.getUniqueID());
                     if (att != null) {
                         org.bukkit.entity.Entity target = Bukkit.getEntity(att);
                         if (target != null) {
                             Packet pNew = (Packet) duplo(packet);
                             ENTITY_ID_PACKENT.setInt(pNew, target.getEntityId());
-                            Vector offset = ((Handler_v1_13_R2) NMSHandler.getInstance()).attachmentOffsets.get(att);
+                            Vector offset = NMSHandler.getInstance().attachmentOffsets.get(att);
                             if (offset != null && (packet instanceof PacketPlayOutEntity.PacketPlayOutRelEntityMove || packet instanceof PacketPlayOutEntity.PacketPlayOutRelEntityMoveLook)) {
-                                boolean rotationBasis = ((Handler_v1_13_R2) NMSHandler.getInstance()).attachmentRotations.contains(att);
+                                boolean rotationBasis = NMSHandler.getInstance().attachmentRotations.contains(att);
                                 Vector goalPosition;
                                 if (!rotationBasis) {
                                     goalPosition = new Vector(e.locX, e.locY, e.locZ).add(offset);
@@ -165,12 +165,12 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
                                 else {
                                     goalPosition = new Vector(e.locX, e.locY, e.locZ).add(NMSHandler.fixOffset(offset, -e.yaw, e.pitch));
                                 }
-                                Vector oldPos = ((Handler_v1_13_R2) NMSHandler.getInstance()).visiblePositions.get(target.getUniqueId());
+                                Vector oldPos = NMSHandler.getInstance().visiblePositions.get(target.getUniqueId());
                                 if (oldPos == null) {
                                     oldPos = target.getLocation().toVector();
                                 }
                                 Vector moveNeeded = goalPosition.clone().subtract(oldPos);
-                                ((Handler_v1_13_R2) NMSHandler.getInstance()).visiblePositions.put(target.getUniqueId(), goalPosition.clone());
+                                NMSHandler.getInstance().visiblePositions.put(target.getUniqueId(), goalPosition.clone());
                                 int offX = (int) (moveNeeded.getX() * (32 * 128));
                                 int offY = (int) (moveNeeded.getY() * (32 * 128));
                                 int offZ = (int) (moveNeeded.getZ() * (32 * 128));
@@ -195,7 +195,7 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
                 }
             }
             catch (Exception e) {
-                e.printStackTrace();
+                dB.echoError(e);
             }
         }
         else if (packet instanceof PacketPlayOutEntityVelocity) {
@@ -206,11 +206,11 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
                     oldManager.sendPacket(packet, genericfuturelistener);
                 }
                 else {
-                    if (!((Handler_v1_13_R2) NMSHandler.getInstance()).attachmentsA.containsKey(e.getUniqueID())
-                            || ((Handler_v1_13_R2) NMSHandler.getInstance()).attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
+                    if (!NMSHandler.getInstance().attachmentsA.containsKey(e.getUniqueID())
+                            || NMSHandler.getInstance().attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
                         oldManager.sendPacket(packet, genericfuturelistener);
                     }
-                    UUID att = ((Handler_v1_13_R2) NMSHandler.getInstance()).attachments2.get(e.getUniqueID());
+                    UUID att = NMSHandler.getInstance().attachments2.get(e.getUniqueID());
                     if (att != null) {
                         org.bukkit.entity.Entity target = Bukkit.getEntity(att);
                         if (target != null) {
@@ -222,7 +222,7 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
                 }
             }
             catch (Exception e) {
-                e.printStackTrace();
+                dB.echoError(e);
             }
         }
         else if (packet instanceof PacketPlayOutEntityTeleport) {
@@ -233,20 +233,20 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
                     oldManager.sendPacket(packet, genericfuturelistener);
                 }
                 else {
-                    if (!((Handler_v1_13_R2) NMSHandler.getInstance()).attachmentsA.containsKey(e.getUniqueID())
-                            || ((Handler_v1_13_R2) NMSHandler.getInstance()).attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
+                    if (!NMSHandler.getInstance().attachmentsA.containsKey(e.getUniqueID())
+                            || NMSHandler.getInstance().attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
                         oldManager.sendPacket(packet, genericfuturelistener);
                     }
-                    UUID att = ((Handler_v1_13_R2) NMSHandler.getInstance()).attachments2.get(e.getUniqueID());
+                    UUID att = NMSHandler.getInstance().attachments2.get(e.getUniqueID());
                     if (att != null) {
                         org.bukkit.entity.Entity target = Bukkit.getEntity(att);
                         if (target != null) {
                             Packet pNew = (Packet) duplo(packet);
                             ENTITY_ID_PACKTELENT.setInt(pNew, target.getEntityId());
-                            Vector offset = ((Handler_v1_13_R2) NMSHandler.getInstance()).attachmentOffsets.get(att);
+                            Vector offset = NMSHandler.getInstance().attachmentOffsets.get(att);
                             Vector resultPos = new Vector(POS_X_PACKTELENT.getDouble(pNew), POS_Y_PACKTELENT.getDouble(pNew), POS_Z_PACKTELENT.getDouble(pNew));
                             if (offset != null) {
-                                boolean rotationBasis = ((Handler_v1_13_R2) NMSHandler.getInstance()).attachmentRotations.contains(att);
+                                boolean rotationBasis = NMSHandler.getInstance().attachmentRotations.contains(att);
                                 Vector goalOffset;
                                 if (!rotationBasis) {
                                     goalOffset = offset;
@@ -259,14 +259,14 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
                                 POS_Z_PACKTELENT.setDouble(pNew, POS_Z_PACKTELENT.getDouble(pNew) + goalOffset.getZ());
                                 resultPos.add(goalOffset);
                             }
-                            ((Handler_v1_13_R2) NMSHandler.getInstance()).visiblePositions.put(target.getUniqueId(), resultPos);
+                            NMSHandler.getInstance().visiblePositions.put(target.getUniqueId(), resultPos);
                             oldManager.sendPacket(pNew);
                         }
                     }
                 }
             }
             catch (Exception e) {
-                e.printStackTrace();
+                dB.echoError(e);
             }
         }
         else if (packet instanceof PacketPlayOutNamedEntitySpawn
@@ -295,8 +295,10 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
         }
         else if (packet instanceof PacketPlayOutPlayerInfo) {
             PacketPlayOutPlayerInfo playerInfo = (PacketPlayOutPlayerInfo) packet;
-            ProfileEditor_v1_13_R2.updatePlayerProfiles(playerInfo);
-            oldManager.sendPacket(playerInfo);
+            if (ProfileEditor_v1_13_R2.handleMirrorProfiles(playerInfo, this, genericfuturelistener)) {
+                ProfileEditor_v1_13_R2.updatePlayerProfiles(playerInfo);
+                oldManager.sendPacket(playerInfo);
+            }
         }
         else if (packet instanceof PacketPlayOutEntityMetadata) {
             if (!packetHandler.sendPacket(player.getBukkitEntity(), new PacketOutEntityMetadata_v1_13_R2((PacketPlayOutEntityMetadata) packet))) {
@@ -425,7 +427,7 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
             ReflectionHelper.fixFinal(managerField);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            dB.echoError(e);
         }
         protocolDirectionField = directionField;
         networkManagerField = managerField;
@@ -437,7 +439,7 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
             direction = (EnumProtocolDirection) protocolDirectionField.get(networkManager);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            dB.echoError(e);
         }
         return direction;
     }
@@ -447,7 +449,7 @@ public class DenizenNetworkManager_v1_13_R2 extends NetworkManager {
             networkManagerField.set(playerConnection, networkManager);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            dB.echoError(e);
         }
     }
 }

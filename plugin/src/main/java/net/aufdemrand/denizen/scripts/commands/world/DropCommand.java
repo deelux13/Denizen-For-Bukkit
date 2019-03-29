@@ -5,7 +5,6 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.*;
 import net.aufdemrand.denizencore.scripts.ScriptEntry;
@@ -32,7 +31,7 @@ public class DropCommand extends AbstractCommand {
                     && arg.matchesArgumentList(dItem.class)) {
                 // Item arg
                 scriptEntry.addObject("action", new Element(Action.DROP_ITEM.toString()).setPrefix("action"));
-                scriptEntry.addObject("item", arg.asType(dList.class).filter(dItem.class));
+                scriptEntry.addObject("item", arg.asType(dList.class).filter(dItem.class, scriptEntry));
             }
             else if (!scriptEntry.hasObject("action")
                     && arg.matches("experience", "exp", "xp"))
@@ -98,7 +97,7 @@ public class DropCommand extends AbstractCommand {
 
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         // Get objects
         dLocation location = (dLocation) scriptEntry.getObject("location");

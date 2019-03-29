@@ -3,13 +3,11 @@ package net.aufdemrand.denizen.events.player;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.*;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDamageEvent;
@@ -18,10 +16,11 @@ public class PlayerDamagesBlockScriptEvent extends BukkitScriptEvent implements 
 
     // <--[event]
     // @Events
-    // player damages block (in <area>)
-    // player damages <material> (in <area>)
+    // player damages block
+    // player damages <material>
     //
-    // @Regex ^on player damages [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player damages [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -58,10 +57,8 @@ public class PlayerDamagesBlockScriptEvent extends BukkitScriptEvent implements 
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        String mat = CoreUtilities.getXthArg(2, lower);
+        String mat = path.eventArgLowerAt(2);
         if (!tryMaterial(material, mat)) {
             return false;
         }
@@ -76,16 +73,6 @@ public class PlayerDamagesBlockScriptEvent extends BukkitScriptEvent implements 
     @Override
     public String getName() {
         return "PlayerDamagesBlock";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BlockDamageEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -127,14 +114,12 @@ public class PlayerDamagesBlockScriptEvent extends BukkitScriptEvent implements 
         if (dEntity.isNPC(event.getPlayer())) {
             return;
         }
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
+        material = new dMaterial(event.getBlock());
         location = new dLocation(event.getBlock().getLocation());
         cuboids = null;
-        cancelled = event.isCancelled();
         instabreak = event.getInstaBreak();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setInstaBreak(instabreak);
     }
 

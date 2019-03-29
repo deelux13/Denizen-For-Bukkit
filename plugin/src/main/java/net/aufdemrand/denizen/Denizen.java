@@ -31,6 +31,7 @@ import net.aufdemrand.denizen.objects.properties.inventory.InventoryHolder;
 import net.aufdemrand.denizen.objects.properties.inventory.InventorySize;
 import net.aufdemrand.denizen.objects.properties.inventory.InventoryTitle;
 import net.aufdemrand.denizen.objects.properties.item.*;
+import net.aufdemrand.denizen.objects.properties.material.MaterialPlantGrowth;
 import net.aufdemrand.denizen.objects.properties.trade.*;
 import net.aufdemrand.denizen.scripts.commands.BukkitCommandRegistry;
 import net.aufdemrand.denizen.scripts.containers.core.*;
@@ -38,10 +39,10 @@ import net.aufdemrand.denizen.scripts.triggers.TriggerRegistry;
 import net.aufdemrand.denizen.tags.BukkitTagContext;
 import net.aufdemrand.denizen.tags.core.*;
 import net.aufdemrand.denizen.utilities.*;
+import net.aufdemrand.denizen.utilities.blocks.OldMaterialsHelper;
 import net.aufdemrand.denizen.utilities.command.CommandManager;
 import net.aufdemrand.denizen.utilities.command.Injector;
 import net.aufdemrand.denizen.utilities.command.messaging.Messaging;
-import net.aufdemrand.denizen.utilities.debugging.LogInterceptor;
 import net.aufdemrand.denizen.utilities.debugging.StatsRecord;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizen.utilities.depends.Depends;
@@ -52,14 +53,12 @@ import net.aufdemrand.denizencore.DenizenCore;
 import net.aufdemrand.denizencore.DenizenImplementation;
 import net.aufdemrand.denizencore.events.OldEventManager;
 import net.aufdemrand.denizencore.events.ScriptEvent;
-import net.aufdemrand.denizencore.interfaces.dExternal;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.ObjectFetcher;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.objects.dScript;
-import net.aufdemrand.denizencore.objects.properties.Property;
 import net.aufdemrand.denizencore.objects.properties.PropertyParser;
 import net.aufdemrand.denizencore.scripts.ScriptBuilder;
 import net.aufdemrand.denizencore.scripts.ScriptEntry;
@@ -72,7 +71,9 @@ import net.aufdemrand.denizencore.scripts.queues.core.InstantQueue;
 import net.aufdemrand.denizencore.tags.TagContext;
 import net.aufdemrand.denizencore.tags.TagManager;
 import net.aufdemrand.denizencore.utilities.debugging.Debuggable;
+import net.aufdemrand.denizencore.utilities.debugging.SlowWarning;
 import net.aufdemrand.denizencore.utilities.debugging.dB.DebugElement;
+import net.aufdemrand.denizencore.utilities.text.ConfigUpdater;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.trait.TraitInfo;
 import org.apache.commons.lang.StringUtils;
@@ -85,14 +86,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.craftbukkit.v1_13_R2.util.CraftMagicNumbers;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -192,13 +191,13 @@ import java.util.logging.Logger;
 // + ----- dCuboid ------+
 // | object notation: cu@   can reference unique objects: no      can be notable: yes
 // | constructors: ( <>'s represent non-static information and are not literal)
-// |   cu@<position_1>|<position_2>|... - fetches a new cuboid encompassing a region from position 1 to 2, from 2 to 3, ...
+// |   cu@<position_1>|<position_2>|... - fetches a new cuboid encompassing a region from position 1 to 2, from 3 to 4, ...
 // |   cu@<notable_name> - fetches the cuboid that has been noted with the specified ID
 //
 // + ----- dEllipsoid ------+
 // | object notation: ellipsoid@   can reference unique objects: no      can be notable: yes
 // | constructors: ( <>'s represent non-static information and are not literal)
-// |   ellipsoid@<x>,<y>,<z>,<world>,<xrad>,<yrad>,<zrad>... - fetches a new ellispoid at the position with the given radius
+// |   ellipsoid@<x>,<y>,<z>,<world>,<xrad>,<yrad>,<zrad> - fetches a new ellispoid at the position with the given radius
 // |   ellipsoid@<notable_name> - fetches the ellipsoid that has been noted with the specified ID
 //
 // + ----- dChunk ------+
@@ -267,19 +266,14 @@ import java.util.logging.Logger;
 
 public class Denizen extends JavaPlugin implements DenizenImplementation {
 
-    public final static int configVersion = 15;
     public static String versionTag = null;
     private boolean startedSuccessful = false;
-
-    public static LogInterceptor logInterceptor;
-
 
     private CommandManager commandManager;
 
     public CommandManager getCommandManager() {
         return commandManager;
     }
-
 
     /*
      * Denizen Registries
@@ -327,8 +321,6 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
 
     public Depends depends = new Depends();
 
-    public RuntimeCompiler runtimeCompiler;
-
     private BukkitWorldScriptHelper ws_helper;
 
     public final static long startTime = System.currentTimeMillis();
@@ -347,26 +339,20 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
             return;
         }
 
-        String mappingsCode = NMSHandler.getInstance().getNmsMappingsCode();
-        if (mappingsCode != null) {
-            if (!((CraftMagicNumbers) CraftMagicNumbers.INSTANCE).getMappingsVersion().equals(mappingsCode)) {
-                getLogger().warning("-------------------------------------");
-                getLogger().warning("This build of Denizen was built for a different Spigot revision! This may potentially cause issues."
-                        + " If you are experiencing trouble, update Denizen and Spigot both to latest builds!"
-                        + " If this message appears with both Denizen and Spigot fully up-to-date, contact the Denizen team (via GitHub, Spigot, or Discord) to request an update be built.");
-                getLogger().warning("-------------------------------------");
-            }
-        }
-
-        if (NMSHandler.getVersion().isAtMost(NMSVersion.v1_11_R1)) { // TODO: 1.12 update
-            logInterceptor = new LogInterceptor();
+        if (!NMSHandler.getInstance().isCorrectMappingsCode()) {
+            getLogger().warning("-------------------------------------");
+            getLogger().warning("This build of Denizen was built for a different Spigot revision! This may potentially cause issues."
+                    + " If you are experiencing trouble, update Denizen and Spigot both to latest builds!"
+                    + " If this message appears with both Denizen and Spigot fully up-to-date, contact the Denizen team (via GitHub, Spigot, or Discord) to request an update be built.");
+            getLogger().warning("-------------------------------------");
         }
 
         try {
-            org.spigotmc.AsyncCatcher.enabled = false;
+            NMSHandler.getInstance().disableAsyncCatcher();
         }
-        catch (Throwable e) {
-            dB.echoError("Running not-Spigot?!");
+        catch (Throwable ex) {
+            dB.echoError("Running not-Spigot?! AsyncCatcher disable failed!");
+            dB.echoError(ex);
         }
 
         try {
@@ -413,7 +399,7 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
             BStatsMetricsLite metrics = new BStatsMetricsLite(this);
         }
         catch (Throwable e) {
-            e.printStackTrace();
+            dB.echoError(e);
         }
 
         try {
@@ -499,17 +485,28 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
         }
 
         try {
-            // Warn if configuration is outdated / too new
-            if (!getConfig().isSet("Config.Version") ||
-                    getConfig().getInt("Config.Version", 0) != configVersion) {
-
-                dB.echoError("Your Denizen config file is from an older version. " +
-                        "Some settings will not be available unless you generate a new one. " +
-                        "This is easily done by stopping the server, deleting the current config.yml file in the Denizen folder " +
-                        "and restarting the server.");
+            // Automatic config file update
+            InputStream properConfig = Denizen.class.getResourceAsStream("/config.yml");
+            String properConfigString = ScriptHelper.convertStreamToString(properConfig);
+            properConfig.close();
+            FileInputStream currentConfig = new FileInputStream(getDataFolder() + "/config.yml");
+            String currentConfigString = ScriptHelper.convertStreamToString(currentConfig);
+            currentConfig.close();
+            String updated = ConfigUpdater.updateConfig(currentConfigString, properConfigString);
+            if (updated != null) {
+                dB.log("Your config file is outdated. Automatically updating it...");
+                FileOutputStream configOutput = new FileOutputStream(getDataFolder() + "/config.yml");
+                OutputStreamWriter writer = new OutputStreamWriter(configOutput);
+                writer.write(updated);
+                writer.close();
+                configOutput.close();
             }
+        }
+        catch (Exception e) {
+            dB.echoError(e);
+        }
 
-            // Create the command script handler for listener
+        try {
             ws_helper = new BukkitWorldScriptHelper();
             ItemScriptHelper is_helper = new ItemScriptHelper();
             InventoryScriptHelper in_helper = new InventoryScriptHelper();
@@ -537,21 +534,11 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
                 CitizensAPI.getTraitFactory().registerTrait(TraitInfo.create(SneakingTrait.class).withName("sneaking"));
                 CitizensAPI.getTraitFactory().registerTrait(TraitInfo.create(InvisibleTrait.class).withName("invisible"));
                 CitizensAPI.getTraitFactory().registerTrait(TraitInfo.create(MobproxTrait.class).withName("mobprox"));
+                CitizensAPI.getTraitFactory().registerTrait(TraitInfo.create(MirrorTrait.class).withName("mirror"));
 
                 // Register Speech AI
                 CitizensAPI.getSpeechFactory().register(DenizenChat.class, "denizen_chat");
             }
-
-            // If Program AB, used for reading Artificial Intelligence Markup Language
-            // 2.0, is included as a dependency at Denizen/lib/Ab.jar, register the
-            // ChatbotTrait
-            if (Depends.hasProgramAB) {
-                CitizensAPI.getTraitFactory().registerTrait(TraitInfo.create(ChatbotTrait.class).withName("chatbot"));
-            }
-
-            // Compile and load Denizen externals
-            runtimeCompiler = new RuntimeCompiler(this);
-            runtimeCompiler.loader();
         }
         catch (Exception e) {
             dB.echoError(e);
@@ -572,15 +559,30 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
 
             tagManager().registerCoreTags();
 
+            // Objects
+            new BiomeTags(this);
+            new ChunkTags(this);
+            new ColorTags(this);
             new CuboidTags(this);
+            new EllipsoidTags(this);
             new EntityTags(this);
+            new InventoryTags(this);
+            new ItemTags(this);
             new LocationTags(this);
+            new MaterialTags(this);
+            if (Depends.citizens != null) {
+                new NPCTags(this);
+            }
             new PlayerTags(this);
+            new PluginTags(this);
+            new TradeTags(this);
+            new WorldTags(this);
+
+            // Other bases
             new ServerTags(this);
             new TextTags(this);
             new ParseTags(this);
             if (Depends.citizens != null) {
-                new NPCTags(this);
                 new AnchorTags(this);
                 new ConstantTags(this);
             }
@@ -612,9 +614,7 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
             ScriptEvent.registerScriptEvent(new ChunkUnloadScriptEvent());
             ScriptEvent.registerScriptEvent(new CreeperPoweredScriptEvent());
             ScriptEvent.registerScriptEvent(new EntityBreaksHangingScriptEvent());
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_10_R1)) {
-                ScriptEvent.registerScriptEvent(new EntityBreedScriptEvent());
-            }
+            ScriptEvent.registerScriptEvent(new EntityBreedScriptEvent());
             ScriptEvent.registerScriptEvent(new EntityChangesBlockScriptEvent());
             ScriptEvent.registerScriptEvent(new EntityCombustsScriptEvent());
             ScriptEvent.registerScriptEvent(new EntityCreatePortalScriptEvent());
@@ -629,9 +629,7 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
             ScriptEvent.registerScriptEvent(new EntityExplosionPrimesScriptEvent());
             ScriptEvent.registerScriptEvent(new EntityFoodLevelChangeScriptEvent());
             ScriptEvent.registerScriptEvent(new EntityFormsBlockScriptEvent());
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)) {
-                ScriptEvent.registerScriptEvent(new EntityGlideScriptEvent());
-            }
+            ScriptEvent.registerScriptEvent(new EntityGlideScriptEvent());
             ScriptEvent.registerScriptEvent(new EntityHealsScriptEvent());
             ScriptEvent.registerScriptEvent(new EntityInteractScriptEvent());
             ScriptEvent.registerScriptEvent(new EntityKilledScriptEvent());
@@ -660,9 +658,7 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
             ScriptEvent.registerScriptEvent(new ItemSpawnsScriptEvent());
             ScriptEvent.registerScriptEvent(new LeafDecaysScriptEvent());
             ScriptEvent.registerScriptEvent(new LightningStrikesScriptEvent());
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)) {
-                ScriptEvent.registerScriptEvent(new LingeringPotionSplashScriptEvent());
-            }
+            ScriptEvent.registerScriptEvent(new LingeringPotionSplashScriptEvent());
             ScriptEvent.registerScriptEvent(new LiquidSpreadScriptEvent());
             ScriptEvent.registerScriptEvent(new ListPingScriptEvent());
             ScriptEvent.registerScriptEvent(new PigZappedScriptEvent());
@@ -719,10 +715,8 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
             }
             ScriptEvent.registerScriptEvent(new PlayerReceivesMessageScriptEvent());
             ScriptEvent.registerScriptEvent(new PlayerRespawnsScriptEvent());
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)) {
-                ScriptEvent.registerScriptEvent(new PlayerRightClicksAtEntityScriptEvent());
-                ScriptEvent.registerScriptEvent(new PlayerSwapsItemsScriptEvent());
-            }
+            ScriptEvent.registerScriptEvent(new PlayerRightClicksAtEntityScriptEvent());
+            ScriptEvent.registerScriptEvent(new PlayerSwapsItemsScriptEvent());
             ScriptEvent.registerScriptEvent(new PlayerRightClicksEntityScriptEvent());
             ScriptEvent.registerScriptEvent(new PlayerShearsScriptEvent());
             ScriptEvent.registerScriptEvent(new PlayerSneakScriptEvent());
@@ -731,6 +725,7 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
             ScriptEvent.registerScriptEvent(new PlayerStatisticIncrementsScriptEvent());
             ScriptEvent.registerScriptEvent(new PlayerSteersEntityScriptEvent());
             ScriptEvent.registerScriptEvent(new PlayerStepsOnScriptEvent());
+            ScriptEvent.registerScriptEvent(new PlayerTabCompleteScriptEvent());
             ScriptEvent.registerScriptEvent(new PlayerTakesFromFurnaceScriptEvent());
             ScriptEvent.registerScriptEvent(new PlayerThrowsEggScriptEvent());
             ScriptEvent.registerScriptEvent(new PlayerUsesPortalScriptEvent());
@@ -798,8 +793,8 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
         }
 
         try {
-            // Initialize non-standard dMaterials
-            dMaterial._initialize();
+            // Initialize old Materials helper
+            OldMaterialsHelper._initialize();
 
             // register properties that add Bukkit code to core objects
             PropertyParser.registerProperty(BukkitScriptProperties.class, dScript.class);
@@ -812,18 +807,14 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
             PropertyParser.registerProperty(EntityAI.class, dEntity.class);
             PropertyParser.registerProperty(EntityAnger.class, dEntity.class);
             PropertyParser.registerProperty(EntityAngry.class, dEntity.class);
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)) {
-                PropertyParser.registerProperty(EntityAreaEffectCloud.class, dEntity.class);
-                PropertyParser.registerProperty(EntityArmorBonus.class, dEntity.class);
-                PropertyParser.registerProperty(EntityInvulnerable.class, dEntity.class);
-                PropertyParser.registerProperty(EntityBoatType.class, dEntity.class);
-            }
+            PropertyParser.registerProperty(EntityAreaEffectCloud.class, dEntity.class);
+            PropertyParser.registerProperty(EntityArmorBonus.class, dEntity.class);
+            PropertyParser.registerProperty(EntityInvulnerable.class, dEntity.class);
+            PropertyParser.registerProperty(EntityBoatType.class, dEntity.class);
             PropertyParser.registerProperty(EntityArmorPose.class, dEntity.class);
             PropertyParser.registerProperty(EntityArms.class, dEntity.class);
             PropertyParser.registerProperty(EntityBasePlate.class, dEntity.class);
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)) {
-                PropertyParser.registerProperty(EntityBeamTarget.class, dEntity.class);
-            }
+            PropertyParser.registerProperty(EntityBeamTarget.class, dEntity.class);
             PropertyParser.registerProperty(EntityBodyArrows.class, dEntity.class);
             PropertyParser.registerProperty(EntityBoundingBox.class, dEntity.class);
             PropertyParser.registerProperty(EntityChestCarrier.class, dEntity.class);
@@ -840,9 +831,7 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
             PropertyParser.registerProperty(EntityHealth.class, dEntity.class);
             PropertyParser.registerProperty(EntityInfected.class, dEntity.class);
             PropertyParser.registerProperty(EntityInventory.class, dEntity.class);
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)) {
-                PropertyParser.registerProperty(EntityIsShowingBottom.class, dEntity.class);
-            }
+            PropertyParser.registerProperty(EntityIsShowingBottom.class, dEntity.class);
             PropertyParser.registerProperty(EntityItem.class, dEntity.class);
             PropertyParser.registerProperty(EntityJumpStrength.class, dEntity.class);
             PropertyParser.registerProperty(EntityKnockback.class, dEntity.class);
@@ -873,7 +862,7 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
 
             // register core dInventory properties
             PropertyParser.registerProperty(InventoryHolder.class, dInventory.class); // Holder must be loaded first to initiate correctly
-            PropertyParser.registerProperty(InventorySize.class, dInventory.class); // Same with size...(Too small for contents)
+            PropertyParser.registerProperty(InventorySize.class, dInventory.class); // Same with size... (too small for contents)
             PropertyParser.registerProperty(InventoryContents.class, dInventory.class);
             PropertyParser.registerProperty(InventoryTitle.class, dInventory.class);
 
@@ -890,26 +879,25 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
             PropertyParser.registerProperty(ItemFirework.class, dItem.class);
             PropertyParser.registerProperty(ItemFlags.class, dItem.class);
             PropertyParser.registerProperty(ItemInventory.class, dItem.class);
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_10_R1)) {
-                PropertyParser.registerProperty(ItemLock.class, dItem.class);
-            }
+            PropertyParser.registerProperty(ItemLock.class, dItem.class);
             PropertyParser.registerProperty(ItemLore.class, dItem.class);
             PropertyParser.registerProperty(ItemMap.class, dItem.class);
             PropertyParser.registerProperty(ItemNBT.class, dItem.class);
             PropertyParser.registerProperty(ItemAttributeNBT.class, dItem.class);
             PropertyParser.registerProperty(ItemPatterns.class, dItem.class);
             PropertyParser.registerProperty(ItemPlantgrowth.class, dItem.class);
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)) {
-                PropertyParser.registerProperty(ItemPotion.class, dItem.class);
-            }
+            PropertyParser.registerProperty(ItemPotion.class, dItem.class);
             PropertyParser.registerProperty(ItemQuantity.class, dItem.class);
             PropertyParser.registerProperty(ItemScript.class, dItem.class);
             PropertyParser.registerProperty(ItemSignContents.class, dItem.class);
             PropertyParser.registerProperty(ItemSkullskin.class, dItem.class);
-            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)) {
-                PropertyParser.registerProperty(ItemSpawnEgg.class, dItem.class);
-            }
+            PropertyParser.registerProperty(ItemSpawnEgg.class, dItem.class);
             PropertyParser.registerProperty(ItemUnbreakable.class, dItem.class);
+
+            if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_13_R2)) {
+                // register core dMaterial properties
+                PropertyParser.registerProperty(MaterialPlantGrowth.class, dMaterial.class);
+            }
 
             if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_12_R1)) {
                 // register core dTrade properties
@@ -1003,6 +991,8 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
         // @Events
         // shutdown
         //
+        // @Regex ^on shutdown$
+        //
         // @Warning not all plugins will be loaded and delayed scripts will be dropped.
         //
         // @Triggers when the server is shutting down.
@@ -1031,12 +1021,6 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
         // Save offline player inventories
         InventoryScriptHelper._savePlayerInventories();
 
-        // Unload loaded dExternals
-        for (dExternal external : RuntimeCompiler.loadedExternals) {
-            external.unload();
-        }
-        RuntimeCompiler.loadedExternals.clear();
-
         //Disable core members
         getCommandRegistry().disableCoreMembers();
 
@@ -1049,6 +1033,12 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
         }
 
         saveSaves();
+    }
+
+    @Override
+    public void reloadConfig() {
+        super.reloadConfig();
+        SlowWarning.WARNING_RATE = Settings.warningRate();
     }
 
 
@@ -1248,11 +1238,8 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
         // -->
 
         if (cmdName.equalsIgnoreCase("ex")) {
-            List<Object> entries = new ArrayList<Object>();
-            String entry = "";
-            for (String arg : args) {
-                entry = entry + arg + " ";
-            }
+            List<Object> entries = new ArrayList<>();
+            String entry = String.join(" ", args);
 
             if (entry.length() < 2) {
                 sender.sendMessage("/ex <dCommand> (arguments)");
@@ -1417,7 +1404,7 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
     }
 
     @Override
-    public void debugTagFill(ScriptEntry entry, String tag, String result) {
+    public void debugTagFill(Debuggable entry, String tag, String result) {
         dB.echoDebug(entry, ChatColor.DARK_GRAY + "Filled tag <" + ChatColor.WHITE + tag
                 + ChatColor.DARK_GRAY + "> with '" + ChatColor.WHITE + result + ChatColor.DARK_GRAY + "'.");
     }
@@ -1712,7 +1699,7 @@ public class Denizen extends JavaPlugin implements DenizenImplementation {
     @Override
     public void preTagExecute() {
         try {
-            org.spigotmc.AsyncCatcher.enabled = false;
+            NMSHandler.getInstance().disableAsyncCatcher();
         }
         catch (Throwable e) {
             dB.echoError("Running not-Spigot?!");

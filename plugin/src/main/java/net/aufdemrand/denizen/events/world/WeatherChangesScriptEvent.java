@@ -1,19 +1,16 @@
 package net.aufdemrand.denizen.events.world;
 
-
+import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dWorld;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
-import net.aufdemrand.denizencore.events.ScriptEvent;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.weather.WeatherChangeEvent;
 
-public class WeatherChangesScriptEvent extends ScriptEvent implements Listener {
+public class WeatherChangesScriptEvent extends BukkitScriptEvent implements Listener {
 
     // <--[event]
     // @Events
@@ -47,13 +44,11 @@ public class WeatherChangesScriptEvent extends ScriptEvent implements Listener {
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String cmd = CoreUtilities.getXthArg(1, lower);
+        String cmd = path.eventArgLowerAt(1);
         if (!cmd.equals("changes") && !cmd.equals(weather.identifySimple())) {
             return false;
         }
-        String wCheck = CoreUtilities.getXthArg(3, lower);
+        String wCheck = path.eventArgLowerAt(3);
         if (wCheck.length() > 0 && !wCheck.equals(CoreUtilities.toLowerCase(world.getName()))) {
             return false;
         }
@@ -63,16 +58,6 @@ public class WeatherChangesScriptEvent extends ScriptEvent implements Listener {
     @Override
     public String getName() {
         return "WeatherChanges";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        WeatherChangeEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -96,8 +81,6 @@ public class WeatherChangesScriptEvent extends ScriptEvent implements Listener {
         world = new dWorld(event.getWorld());
         weather = new Element(event.toWeatherState() ? "rains" : "clears");
         this.event = event;
-        cancelled = event.isCancelled();
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

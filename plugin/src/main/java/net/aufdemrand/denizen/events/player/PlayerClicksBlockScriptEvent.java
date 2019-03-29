@@ -2,17 +2,13 @@ package net.aufdemrand.denizen.events.player;
 
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
-import net.aufdemrand.denizen.nms.NMSHandler;
-import net.aufdemrand.denizen.nms.NMSVersion;
 import net.aufdemrand.denizen.objects.*;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -27,12 +23,13 @@ public class PlayerClicksBlockScriptEvent extends BukkitScriptEvent implements L
     // <--[event]
     // @Events
     // player clicks block
-    // player (<click type>) clicks (<material>) (with <item>) (using hand/off_hand/either_hand) (in <area>)
-    // player (<click type>) clicks block (with <item>) (using hand/off_hand/either_hand) (in <area>)
+    // player (<click type>) clicks (<material>) (with <item>) (using hand/off_hand/either_hand)
+    // player (<click type>) clicks block (with <item>) (using hand/off_hand/either_hand)
     //
     // @Cancellable true
     //
-    // @Regex ^on player (((([^\s]+ )?clicks [^\s]+( with [^\s]+)?( in [^\s]+)?)))( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player (((([^\s]+ )?clicks [^\s]+( with [^\s]+)?( in [^\s]+)?)))$
+    // @Switch in <area>
     //
     // @Triggers when a player clicks on a block or in the air.
     //
@@ -147,17 +144,15 @@ public class PlayerClicksBlockScriptEvent extends BukkitScriptEvent implements L
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        int index = CoreUtilities.split(lower, ' ').indexOf("clicks") + 1;
+        int index = path.eventArgLowerAt(1).equals("clicks") ? 1 : 2;
 
-        if (index == 3
-                && !click_type.identify().startsWith(CoreUtilities.getXthArg(1, lower).toUpperCase())) {
+        if (index == 2
+                && !click_type.identify().startsWith(path.eventArgLowerAt(1).toUpperCase())) {
             return false;
         }
 
-        dMaterial material = event.hasBlock() ? dMaterial.getMaterialFrom(event.getClickedBlock().getType(), event.getClickedBlock().getData()) : null;
-        String mat = CoreUtilities.getXthArg(index, lower);
+        dMaterial material = event.hasBlock() ? new dMaterial(event.getClickedBlock()) : null;
+        String mat = path.eventArgLowerAt(index + 1);
         if (mat.length() > 0
                 && !withHelpList.contains(mat)
                 && !tryMaterial(material, mat)) {
@@ -183,16 +178,6 @@ public class PlayerClicksBlockScriptEvent extends BukkitScriptEvent implements L
     @Override
     public String getName() {
         return "PlayerClicksBlock";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerInteractEvent.getHandlerList().unregister(this);
     }
 
     public boolean wasCancellationAltered;
@@ -233,7 +218,7 @@ public class PlayerClicksBlockScriptEvent extends BukkitScriptEvent implements L
         if (event.getAction() == Action.PHYSICAL) {
             return;
         }
-        hand = new Element(NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2) ? event.getHand().name() : "HAND");
+        hand = new Element(event.getHand().name());
         item = new dItem(event.getItem());
         location = event.hasBlock() ? new dLocation(event.getClickedBlock().getLocation()) : null;
         relative = event.hasBlock() ? new dLocation(event.getClickedBlock().getRelative(event.getBlockFace()).getLocation()) : null;

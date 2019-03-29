@@ -5,12 +5,10 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerBedLeaveEvent;
@@ -19,9 +17,10 @@ public class PlayerLeavesBedScriptEvent extends BukkitScriptEvent implements Lis
 
     // <--[event]
     // @Events
-    // player leaves bed (in <area>)
+    // player leaves bed
     //
-    // @Regex ^on player leaves bed( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player leaves bed$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -47,24 +46,12 @@ public class PlayerLeavesBedScriptEvent extends BukkitScriptEvent implements Lis
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
         return runInCheck(path, location);
     }
 
     @Override
     public String getName() {
         return "PlayerLeavesBed";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerBedLeaveEvent.getHandlerList().unregister(this);
     }
 
     @Override

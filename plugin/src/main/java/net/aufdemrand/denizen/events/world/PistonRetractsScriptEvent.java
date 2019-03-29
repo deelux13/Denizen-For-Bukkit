@@ -3,13 +3,11 @@ package net.aufdemrand.denizen.events.world;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -19,10 +17,11 @@ public class PistonRetractsScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // piston retracts (in <area>)
-    // <block> retracts (in <area>)
+    // piston retracts
+    // <block> retracts
     //
-    // @Regex ^on [^\s]+ retracts( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ retracts$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -62,9 +61,7 @@ public class PistonRetractsScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String mat = CoreUtilities.getXthArg(0, lower);
+        String mat = path.eventArgLowerAt(0);
         return (mat.equals("piston") || tryMaterial(material, mat))
                 && runInCheck(path, location);
     }
@@ -72,16 +69,6 @@ public class PistonRetractsScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "PistonRetracts";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BlockPistonRetractEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -115,7 +102,7 @@ public class PistonRetractsScriptEvent extends BukkitScriptEvent implements List
     @EventHandler
     public void onPistonRetracts(BlockPistonRetractEvent event) {
         location = new dLocation(event.getBlock().getLocation());
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
+        material = new dMaterial(event.getBlock());
         sticky = new Element(event.isSticky() ? "true" : "false");
         relative = new dLocation(event.getBlock().getRelative(event.getDirection().getOppositeFace()).getLocation());
         blocks = new dList();
@@ -123,9 +110,7 @@ public class PistonRetractsScriptEvent extends BukkitScriptEvent implements List
             blocks.add(new dLocation(block.getLocation()).identify());
         }
         retract_location = new dLocation(event.getBlock().getRelative(event.getDirection().getOppositeFace(), 2).getLocation());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

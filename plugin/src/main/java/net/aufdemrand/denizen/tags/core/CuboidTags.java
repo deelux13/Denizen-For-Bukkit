@@ -6,6 +6,7 @@ import net.aufdemrand.denizencore.objects.TagRunnable;
 import net.aufdemrand.denizencore.tags.Attribute;
 import net.aufdemrand.denizencore.tags.ReplaceableTagEvent;
 import net.aufdemrand.denizencore.tags.TagManager;
+import net.aufdemrand.denizencore.utilities.CoreUtilities;
 
 
 public class CuboidTags {
@@ -27,9 +28,8 @@ public class CuboidTags {
 
         dCuboid cuboid = null;
 
-        String context = event.getNameContext();
         if (event.hasNameContext()) {
-            cuboid = dCuboid.valueOf(context);
+            cuboid = dCuboid.valueOf(event.getNameContext(), event.getAttributes().context);
         }
 
         // Check if cuboid is null, return if it is
@@ -39,7 +39,7 @@ public class CuboidTags {
 
         // Build and fill attributes
         Attribute attribute = event.getAttributes();
-        event.setReplaced(cuboid.getAttribute(attribute.fulfill(1)));
+        event.setReplacedObject(CoreUtilities.autoAttrib(cuboid, attribute.fulfill(1)));
 
     }
 }

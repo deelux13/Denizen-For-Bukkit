@@ -1,7 +1,6 @@
 package net.aufdemrand.denizen.utilities.nbt;
 
 import net.aufdemrand.denizen.nms.NMSHandler;
-import net.aufdemrand.denizen.nms.NMSVersion;
 import net.aufdemrand.denizen.nms.util.jnbt.*;
 import net.aufdemrand.denizen.objects.properties.entity.EntityDisabledSlots.Action;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
@@ -33,9 +32,7 @@ public class CustomNBT {
         slotMap.put(EquipmentSlot.LEGS, 2);
         slotMap.put(EquipmentSlot.CHEST, 3);
         slotMap.put(EquipmentSlot.HEAD, 4);
-        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)) {
-            slotMap.put(EquipmentSlot.OFF_HAND, 5);
-        }
+        slotMap.put(EquipmentSlot.OFF_HAND, 5);
     }
 
     /*

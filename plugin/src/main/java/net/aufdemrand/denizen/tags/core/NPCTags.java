@@ -18,6 +18,7 @@ import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.tags.Attribute;
 import net.aufdemrand.denizencore.tags.ReplaceableTagEvent;
 import net.aufdemrand.denizencore.tags.TagManager;
+import net.aufdemrand.denizencore.utilities.CoreUtilities;
 import net.citizensnpcs.api.ai.TargetType;
 import net.citizensnpcs.api.ai.TeleportStuckAction;
 import net.citizensnpcs.api.ai.event.NavigationBeginEvent;
@@ -65,7 +66,7 @@ public class NPCTags implements Listener {
         // Check if this is a valid player and update the dPlayer object reference.
         {
             if (dNPC.matches(attribute.getContext(1))) {
-                n = dNPC.valueOf(attribute.getContext(1));
+                n = dNPC.valueOf(attribute.getContext(1), attribute.context);
             }
             else {
                 if (!event.hasAlternative()) {
@@ -83,7 +84,7 @@ public class NPCTags implements Listener {
             return;
         }
 
-        event.setReplaced(n.getAttribute(attribute.fulfill(1)));
+        event.setReplacedObject(CoreUtilities.autoAttrib(n, attribute.fulfill(1)));
 
     }
 
@@ -97,6 +98,8 @@ public class NPCTags implements Listener {
     // <--[event]
     // @Events
     // npc completes navigation
+    //
+    // @Regex ^on npc completes navigation$
     //
     // @Warning This event may fire very rapidly.
     //
@@ -140,6 +143,8 @@ public class NPCTags implements Listener {
     // <--[event]
     // @Events
     // npc begins navigation
+    //
+    // @Regex ^on npc begins navigation$
     //
     // @Warning This event may fire very rapidly.
     //
@@ -241,6 +246,8 @@ public class NPCTags implements Listener {
     // <--[event]
     // @Events
     // npc stuck
+    //
+    // @Regex ^on npc stuck$
     //
     // @Triggers when an NPC's navigator is stuck.
     //

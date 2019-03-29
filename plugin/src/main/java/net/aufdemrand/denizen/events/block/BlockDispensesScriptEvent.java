@@ -4,13 +4,11 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDispenseEvent;
@@ -20,12 +18,13 @@ public class BlockDispensesScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // block dispenses item (in <area>)
-    // block dispenses <item> (in <area>)
-    // <block> dispenses item (in <area>)
-    // <block> dispenses <item> (in <area>)
+    // block dispenses item
+    // block dispenses <item>
+    // <block> dispenses item
+    // <block> dispenses <item>
     //
-    // @Regex ^on [^\s]+ dispense [^\s]+ ( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ dispense [^\s]+ $
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -63,30 +62,18 @@ public class BlockDispensesScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
         if (!runInCheck(path, location)) {
             return false;
         }
 
-        String dispenser = CoreUtilities.getXthArg(0, lower);
-        String iTest = CoreUtilities.getXthArg(2, lower);
+        String dispenser = path.eventArgLowerAt(0);
+        String iTest = path.eventArgLowerAt(2);
         return tryMaterial(material, dispenser) && (iTest.equals("item") || tryItem(item, iTest));
     }
 
     @Override
     public String getName() {
         return "BlockDispenses";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BlockDispenseEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -133,14 +120,12 @@ public class BlockDispensesScriptEvent extends BukkitScriptEvent implements List
     @EventHandler
     public void onBlockDispenses(BlockDispenseEvent event) {
         location = new dLocation(event.getBlock().getLocation());
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
+        material = new dMaterial(event.getBlock());
         item = new dItem(event.getItem());
-        cancelled = event.isCancelled();
         velocity = new dLocation(null, event.getVelocity().getX(), event.getVelocity().getY(), event.getVelocity().getZ());
         this.event = event;
-        fire();
+        fire(event);
         event.setVelocity(velocity.toVector());
         event.setItem(item.getItemStack());
-        event.setCancelled(cancelled);
     }
 }

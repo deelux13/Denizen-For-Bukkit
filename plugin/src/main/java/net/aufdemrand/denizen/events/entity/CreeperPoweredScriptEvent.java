@@ -2,12 +2,10 @@ package net.aufdemrand.denizen.events.entity;
 
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreeperPowerEvent;
@@ -16,9 +14,10 @@ public class CreeperPoweredScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // creeper powered (because <cause>) (in <area>)
+    // creeper powered (because <cause>)
     //
-    // @Regex ^on creeper powered( because [^\s]+)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on creeper powered( because [^\s]+)?$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -49,11 +48,9 @@ public class CreeperPoweredScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (CoreUtilities.getXthArg(2, lower).equals("because")
-                && !CoreUtilities.xthArgEquals(3, lower, CoreUtilities.toLowerCase(cause.toString()))) {
+        if (path.eventArgLowerAt(2).equals("because")
+                && !path.eventArgLowerAt(3).equals(CoreUtilities.toLowerCase(cause.toString()))) {
             return false;
         }
 
@@ -67,16 +64,6 @@ public class CreeperPoweredScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "CreeperPowered";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        CreeperPowerEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -103,9 +90,7 @@ public class CreeperPoweredScriptEvent extends BukkitScriptEvent implements List
         lightning = new dEntity(event.getLightning());
         entity = new dEntity(event.getEntity());
         cause = new Element(event.getCause().name());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

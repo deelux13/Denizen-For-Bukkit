@@ -4,12 +4,10 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockIgniteEvent;
@@ -18,10 +16,11 @@ public class BlockIgnitesScriptEvent extends BukkitScriptEvent implements Listen
 
     // <--[event]
     // @Events
-    // block ignites (in <area>)
-    // <material> ignites (in <area>)
+    // block ignites
+    // <material> ignites
     //
-    // @Regex ^on [^\s]+ ignites( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ ignites$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -57,29 +56,17 @@ public class BlockIgnitesScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
         if (!runInCheck(path, location)) {
             return false;
         }
 
-        String mat = CoreUtilities.getXthArg(0, lower);
+        String mat = path.eventArgLowerAt(0);
         return tryMaterial(material, mat);
     }
 
     @Override
     public String getName() {
         return "BlockIgnites";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BlockIgniteEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -110,7 +97,7 @@ public class BlockIgnitesScriptEvent extends BukkitScriptEvent implements Listen
     @EventHandler
     public void onBlockIgnites(BlockIgniteEvent event) {
         location = new dLocation(event.getBlock().getLocation());
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
+        material = new dMaterial(event.getBlock());
         entity = null;
         if (event.getIgnitingEntity() != null) {
             entity = new dEntity(event.getIgnitingEntity());
@@ -120,9 +107,7 @@ public class BlockIgnitesScriptEvent extends BukkitScriptEvent implements Listen
             origin_location = new dLocation(event.getIgnitingBlock().getLocation());
         }
         cause = new Element(event.getCause().toString());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

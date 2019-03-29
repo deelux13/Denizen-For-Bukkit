@@ -5,14 +5,12 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dCuboid;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityTargetEvent;
@@ -21,10 +19,11 @@ public class EntityTargetsScriptEvent extends BukkitScriptEvent implements Liste
 
     // <--[event]
     // @Events
-    // entity targets (<entity>) (because <cause>) (in <area>)
-    // <entity> targets (<entity>) (because <cause>) (in <area>)
+    // entity targets (<entity>) (because <cause>)
+    // <entity> targets (<entity>) (because <cause>)
     //
-    // @Regex ^on [^\s]+ targets( [^\s]+)?( because [^\s]+)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ targets( [^\s]+)?( because [^\s]+)?$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -62,14 +61,12 @@ public class EntityTargetsScriptEvent extends BukkitScriptEvent implements Liste
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(0, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(0))) {
             return false;
         }
 
-        String victim = CoreUtilities.getXthArg(2, lower);
+        String victim = path.eventArgLowerAt(2);
         if (!victim.equals("in") && !victim.equals("because") && !victim.equals("") && !tryEntity(target, victim)) {
             return false;
         }
@@ -78,12 +75,9 @@ public class EntityTargetsScriptEvent extends BukkitScriptEvent implements Liste
             return false;
         }
 
-        Integer pos = lower.indexOf(" because ") + 9;
-        if (pos > 9) {
-            Integer end = lower.indexOf(" ", pos) < 0 ? lower.length() : lower.indexOf(" ", pos);
-            if (!lower.substring(pos, end).equals(CoreUtilities.toLowerCase(reason.toString()))) {
-                return false;
-            }
+        int index = path.eventArgLowerAt(3).equals("because") ? 3 : (path.eventArgAt(2).equals("because") ? 2 : -1);
+        if (index > 0 && !path.eventArgLowerAt(index + 1).equals(CoreUtilities.toLowerCase(reason.toString()))) {
+            return false;
         }
 
         return true;
@@ -92,16 +86,6 @@ public class EntityTargetsScriptEvent extends BukkitScriptEvent implements Liste
     @Override
     public String getName() {
         return "EntityTargets";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityTargetEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -148,10 +132,8 @@ public class EntityTargetsScriptEvent extends BukkitScriptEvent implements Liste
         target = event.getTarget() != null ? new dEntity(event.getTarget()) : null;
         location = new dLocation(event.getEntity().getLocation());
         cuboids = null;
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 
 }

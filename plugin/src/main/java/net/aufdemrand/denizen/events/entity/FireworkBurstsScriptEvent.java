@@ -4,12 +4,10 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.MaterialCompat;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.FireworkExplodeEvent;
@@ -19,9 +17,10 @@ public class FireworkBurstsScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // firework bursts (in <area>)
+    // firework bursts
     //
-    // @Regex ^on firework bursts( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on firework bursts$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -50,8 +49,6 @@ public class FireworkBurstsScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
         if (!runInCheck(path, entity.getLocation())) {
             return false;
         }
@@ -61,16 +58,6 @@ public class FireworkBurstsScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "FireworkBursts";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        FireworkExplodeEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -98,9 +85,7 @@ public class FireworkBurstsScriptEvent extends BukkitScriptEvent implements List
     public void onFireworkBursts(FireworkExplodeEvent event) {
         entity = new dEntity(event.getEntity());
         location = new dLocation(entity.getLocation());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

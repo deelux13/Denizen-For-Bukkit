@@ -5,14 +5,12 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dNPC;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -23,20 +21,21 @@ public class EntityKilledScriptEvent extends BukkitScriptEvent implements Listen
 
     // <--[event]
     // @Events
-    // entity killed (in <area>)
-    // entity killed by <cause> (in <area>)
-    // entity killed by entity (in <area>)
-    // entity killed by <entity> (in <area>)
-    // <entity> killed (in <area>)
-    // <entity> killed by <cause> (in <area>)
-    // <entity> killed by entity (in <area>)
-    // <entity> killed by <entity> (in <area>)
-    // entity kills entity (in <area>)
-    // entity kills <entity> (in <area>)
-    // <entity> kills entity (in <area>)
-    // <entity> kills <entity> (in <area>)
+    // entity killed
+    // entity killed by <cause>
+    // entity killed by entity
+    // entity killed by <entity>
+    // <entity> killed
+    // <entity> killed by <cause>
+    // <entity> killed by entity
+    // <entity> killed by <entity>
+    // entity kills entity
+    // entity kills <entity>
+    // <entity> kills entity
+    // <entity> kills <entity>
     //
-    // @Regex ^on [^\s]+ ((kills [^\s]+)|killed( by [^\s]+)?)( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ ((kills [^\s]+)|killed( by [^\s]+)?)$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -83,12 +82,10 @@ public class EntityKilledScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String cmd = CoreUtilities.getXthArg(1, lower);
-        String arg0 = CoreUtilities.getXthArg(0, lower);
-        String arg2 = CoreUtilities.getXthArg(2, lower);
-        String arg3 = CoreUtilities.getXthArg(3, lower);
+        String cmd = path.eventArgLowerAt(1);
+        String arg0 = path.eventArgLowerAt(0);
+        String arg2 = path.eventArgLowerAt(2);
+        String arg3 = path.eventArgLowerAt(3);
         String attacker = cmd.equals("kills") ? arg0 : arg2.equals("by") ? arg3 : "";
         String target = cmd.equals("kills") ? arg2 : arg0;
 
@@ -118,16 +115,6 @@ public class EntityKilledScriptEvent extends BukkitScriptEvent implements Listen
     @Override
     public String getName() {
         return "EntityKilled";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityDamageEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -208,10 +195,8 @@ public class EntityKilledScriptEvent extends BukkitScriptEvent implements Listen
                 }
             }
         }
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setDamage(damage.asDouble());
     }
 }

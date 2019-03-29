@@ -3,13 +3,11 @@ package net.aufdemrand.denizen.events.entity;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
@@ -20,14 +18,15 @@ public class VehicleDamagedScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // vehicle damaged (in <area>)
-    // <vehicle> damaged (in <area>)
-    // entity damages vehicle (in <area>)
-    // <entity> damages vehicle (in <area>)
-    // entity damages <vehicle> (in <area>)
-    // <entity> damages <vehicle> (in <area>)
+    // vehicle damaged
+    // <vehicle> damaged
+    // entity damages vehicle
+    // <entity> damages vehicle
+    // entity damages <vehicle>
+    // <entity> damages <vehicle>
     //
-    // @Regex ^on [^\s]+ damages [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ damages [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -73,11 +72,9 @@ public class VehicleDamagedScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String cmd = CoreUtilities.getXthArg(1, lower);
-        String veh = cmd.equals("damaged") ? CoreUtilities.getXthArg(0, lower) : CoreUtilities.getXthArg(2, lower);
-        String ent = cmd.equals("damages") ? CoreUtilities.getXthArg(0, lower) : "";
+        String cmd = path.eventArgLowerAt(1);
+        String veh = cmd.equals("damaged") ? path.eventArgLowerAt(0) : path.eventArgLowerAt(2);
+        String ent = cmd.equals("damages") ? path.eventArgLowerAt(0) : "";
 
         if (!tryEntity(vehicle, veh)) {
             return false;
@@ -96,16 +93,6 @@ public class VehicleDamagedScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "VehicleDamaged";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        VehicleDamageEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -143,9 +130,7 @@ public class VehicleDamagedScriptEvent extends BukkitScriptEvent implements List
         entity = event.getAttacker() != null ? new dEntity(event.getAttacker()) : null;
         damage = event.getDamage();
         this.event = event;
-        cancelled = event.isCancelled();
-        fire();
+        fire(event);
         event.setDamage(damage);
-        event.setCancelled(cancelled);
     }
 }

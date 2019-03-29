@@ -6,7 +6,6 @@ import net.aufdemrand.denizen.objects.dMaterial;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.utilities.blocks.FakeBlock;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Duration;
 import net.aufdemrand.denizencore.objects.Element;
@@ -94,7 +93,7 @@ public class ShowFakeCommand extends AbstractCommand {
 
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         Duration duration = scriptEntry.getdObject("duration");
         dList material_list = scriptEntry.getdObject("materials");
@@ -114,16 +113,16 @@ public class ShowFakeCommand extends AbstractCommand {
 
         List<dMaterial> mats = null;
         if (!shouldCancel) {
-            mats = material_list.filter(dMaterial.class);
+            mats = material_list.filter(dMaterial.class, scriptEntry);
         }
 
         int i = 0;
-        for (dLocation loc : list.filter(dLocation.class)) {
+        for (dLocation loc : list.filter(dLocation.class, scriptEntry)) {
             if (!shouldCancel) {
-                FakeBlock.showFakeBlockTo(players.filter(dPlayer.class), loc, mats.get(i % mats.size()), duration);
+                FakeBlock.showFakeBlockTo(players.filter(dPlayer.class, scriptEntry), loc, mats.get(i % mats.size()), duration);
             }
             else {
-                FakeBlock.stopShowingTo(players.filter(dPlayer.class), loc);
+                FakeBlock.stopShowingTo(players.filter(dPlayer.class, scriptEntry), loc);
             }
             i++;
         }

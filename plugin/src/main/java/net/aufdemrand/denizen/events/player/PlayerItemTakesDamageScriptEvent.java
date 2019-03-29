@@ -20,10 +20,11 @@ import org.bukkit.event.player.PlayerItemDamageEvent;
 
 // <--[event]
 // @Events
-// player item takes damage (in <area>)
-// player <item> takes damage (in <area>)
+// player item takes damage
+// player <item> takes damage
 //
-// @Regex ^on player [^\s]+ takes damage( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+// @Regex ^on player [^\s]+ takes damage$
+    // @Switch in <area>
 //
 // @Cancellable true
 //
@@ -61,10 +62,8 @@ public class PlayerItemTakesDamageScriptEvent extends BukkitScriptEvent implemen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        String iItem = CoreUtilities.getXthArg(1, lower);
+        String iItem = path.eventArgLowerAt(1);
         if (!tryItem(item, iItem)) {
             return false;
         }
@@ -77,16 +76,6 @@ public class PlayerItemTakesDamageScriptEvent extends BukkitScriptEvent implemen
     @Override
     public String getName() {
         return "PlayerItemTakesDamage";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerItemDamageEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -122,11 +111,9 @@ public class PlayerItemTakesDamageScriptEvent extends BukkitScriptEvent implemen
         item = new dItem(event.getItem());
         damage = new Element(event.getDamage());
         location = new dLocation(event.getPlayer().getLocation());
-        cancelled = event.isCancelled();
-        boolean wasCancelled = cancelled;
+        boolean wasCancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setDamage(damage.asInt());
         final Player p = event.getPlayer();
         if (cancelled && !wasCancelled) {

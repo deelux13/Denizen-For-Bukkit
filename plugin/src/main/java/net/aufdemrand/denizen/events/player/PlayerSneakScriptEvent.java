@@ -4,13 +4,11 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
@@ -19,11 +17,12 @@ public class PlayerSneakScriptEvent extends BukkitScriptEvent implements Listene
 
     // <--[event]
     // @Events
-    // player toggles sneaking (in <area>)
-    // player starts sneaking (in <area>)
-    // player stops sneaking (in <area>)
+    // player toggles sneaking
+    // player starts sneaking
+    // player stops sneaking
     //
-    // @Regex ^on player (toggles|starts|stops) sneaking( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player (toggles|starts|stops) sneaking$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -49,9 +48,7 @@ public class PlayerSneakScriptEvent extends BukkitScriptEvent implements Listene
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String cmd = CoreUtilities.getXthArg(1, lower);
+        String cmd = path.eventArgLowerAt(1);
         if (cmd.equals("starts") && !state) {
             return false;
         }
@@ -68,17 +65,7 @@ public class PlayerSneakScriptEvent extends BukkitScriptEvent implements Listene
 
     @Override
     public String getName() {
-        return "PlayerSpring";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerToggleSneakEvent.getHandlerList().unregister(this);
+        return "PlayerSneak";
     }
 
     @Override
@@ -105,9 +92,7 @@ public class PlayerSneakScriptEvent extends BukkitScriptEvent implements Listene
             return;
         }
         state = event.isSneaking();
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

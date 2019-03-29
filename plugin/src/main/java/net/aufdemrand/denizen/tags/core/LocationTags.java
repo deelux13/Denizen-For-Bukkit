@@ -2,12 +2,11 @@ package net.aufdemrand.denizen.tags.core;
 
 import net.aufdemrand.denizen.Denizen;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizencore.objects.TagRunnable;
-import net.aufdemrand.denizencore.tags.Attribute;
 import net.aufdemrand.denizencore.tags.ReplaceableTagEvent;
 import net.aufdemrand.denizencore.tags.TagManager;
-
+import net.aufdemrand.denizencore.utilities.CoreUtilities;
+import net.aufdemrand.denizencore.utilities.debugging.SlowWarning;
 
 public class LocationTags {
 
@@ -20,6 +19,8 @@ public class LocationTags {
         }, "location", "l");
     }
 
+    public SlowWarning locationShorthand = new SlowWarning("Short-named tags are hard to read. Please use 'location' instead of 'l' as a root tag.");
+
     public void locationTags(ReplaceableTagEvent event) {
 
         if (!event.matches("location", "l") || event.replaced()) {
@@ -27,8 +28,7 @@ public class LocationTags {
         }
 
         if (event.matches("l")) {
-            dB.echoError(event.getScriptEntry() == null ? null : event.getScriptEntry().getResidingQueue(),
-                    "Short-named tags are hard to read. Please use 'location' instead of 'l' as a root tag.");
+            locationShorthand.warn(event.getScriptEntry());
         }
 
         // Stage the location
@@ -38,7 +38,7 @@ public class LocationTags {
         // the ScriptEntry for a 'location' context
         String context = event.getNameContext();
         if (event.hasNameContext() && dLocation.matches(context)) {
-            loc = dLocation.valueOf(context);
+            loc = dLocation.valueOf(context, event.getAttributes().context);
         }
         else if (event.getScriptEntry().hasObject("location")) {
             loc = (dLocation) event.getScriptEntry().getObject("location");
@@ -50,8 +50,7 @@ public class LocationTags {
         }
 
         // Build and fill attributes
-        Attribute attribute = event.getAttributes();
-        event.setReplaced(loc.getAttribute(attribute.fulfill(1)));
+        event.setReplacedObject(CoreUtilities.autoAttrib(loc, event.getAttributes().fulfill(1)));
 
     }
 }

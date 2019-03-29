@@ -3,13 +3,11 @@ package net.aufdemrand.denizen.events.entity;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -19,10 +17,11 @@ public class SheepDyedScriptEvent extends BukkitScriptEvent implements Listener 
 
     // <--[event]
     // @Events
-    // sheep dyed (<color>) (in <area>)
-    // player dyes sheep (<color>) (in <area>)
+    // sheep dyed (<color>)
+    // player dyes sheep (<color>)
     //
-    // @Regex ^on (sheep dyed|player dyes sheep) [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on (sheep dyed|player dyes sheep) [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -58,11 +57,9 @@ public class SheepDyedScriptEvent extends BukkitScriptEvent implements Listener 
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String cmd = CoreUtilities.getXthArg(1, lower);
+        String cmd = path.eventArgLowerAt(1);
 
-        String new_color = cmd.equals("dyes") ? CoreUtilities.getXthArg(3, lower) : CoreUtilities.getXthArg(2, lower);
+        String new_color = cmd.equals("dyes") ? path.eventArgLowerAt(3) : path.eventArgLowerAt(2);
         if (!new_color.isEmpty() && !new_color.equals(CoreUtilities.toLowerCase(color.toString()))) {
             return false;
         }
@@ -77,16 +74,6 @@ public class SheepDyedScriptEvent extends BukkitScriptEvent implements Listener 
     @Override
     public String getName() {
         return "SheepDyed";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        SheepDyeWoolEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -122,10 +109,8 @@ public class SheepDyedScriptEvent extends BukkitScriptEvent implements Listener 
     public void onSheepDyed(SheepDyeWoolEvent event) {
         entity = new dEntity(event.getEntity());
         color = DyeColor.valueOf(event.getColor().toString());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setColor(color);
     }
 }

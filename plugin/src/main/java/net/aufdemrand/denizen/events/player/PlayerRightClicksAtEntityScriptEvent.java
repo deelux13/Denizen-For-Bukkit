@@ -3,13 +3,11 @@ package net.aufdemrand.denizen.events.player;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.*;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
@@ -24,7 +22,8 @@ import org.bukkit.inventory.EquipmentSlot;
 // player right clicks at <entity> in <area>
 // player right clicks at <entity> in notable cuboid
 //
-// @Regex ^on player right clicks at [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+// @Regex ^on player right clicks at [^\s]+$
+    // @Switch in <area>
 //
 // @Switch with <item>
 //
@@ -57,10 +56,8 @@ public class PlayerRightClicksAtEntityScriptEvent extends BukkitScriptEvent impl
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(4, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(4))) {
             return false;
         }
         if (!runInCheck(path, event.getPlayer().getLocation())) {
@@ -70,8 +67,8 @@ public class PlayerRightClicksAtEntityScriptEvent extends BukkitScriptEvent impl
             return false;
         }
         // Deprecated in favor of with: format
-        if (CoreUtilities.xthArgEquals(5, lower, "with")) {
-            if (!tryItem(new dItem(event.getPlayer().getItemInHand()), CoreUtilities.getXthArg(6, lower))) {
+        if (path.eventArgLowerAt(5).equals("with")) {
+            if (!tryItem(new dItem(event.getPlayer().getItemInHand()), path.eventArgLowerAt(6))) {
                 return false;
             }
         }
@@ -81,16 +78,6 @@ public class PlayerRightClicksAtEntityScriptEvent extends BukkitScriptEvent impl
     @Override
     public String getName() {
         return "PlayerRightClicksAtEntity";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerInteractAtEntityEvent.getHandlerList().unregister(this);
     }
 
 
@@ -136,10 +123,8 @@ public class PlayerRightClicksAtEntityScriptEvent extends BukkitScriptEvent impl
         item = new dItem(event.getPlayer().getItemInHand());
         location = new dLocation(event.getClickedPosition().toLocation(event.getPlayer().getWorld()));
         cuboids = null;
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 
 }

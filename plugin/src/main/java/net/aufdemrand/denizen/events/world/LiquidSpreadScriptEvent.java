@@ -3,11 +3,9 @@ package net.aufdemrand.denizen.events.world;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockFromToEvent;
@@ -16,10 +14,11 @@ public class LiquidSpreadScriptEvent extends BukkitScriptEvent implements Listen
 
     // <--[event]
     // @Events
-    // liquid spreads (in <area>)
-    // <liquid block> spreads (in <area>)
+    // liquid spreads
+    // <liquid block> spreads
     //
-    // @Regex ^on [^\s]+ spreads( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ spreads$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -51,9 +50,7 @@ public class LiquidSpreadScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String mat = CoreUtilities.getXthArg(0, lower);
+        String mat = path.eventArgLowerAt(0);
         return (mat.equals("liquid") || tryMaterial(material, mat))
                 && (runInCheck(path, location)
                 || runInCheck(path, destination));
@@ -62,16 +59,6 @@ public class LiquidSpreadScriptEvent extends BukkitScriptEvent implements Listen
     @Override
     public String getName() {
         return "LiquidSpreads";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BlockFromToEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -97,10 +84,8 @@ public class LiquidSpreadScriptEvent extends BukkitScriptEvent implements Listen
     public void onLiquidSpreads(BlockFromToEvent event) {
         destination = new dLocation(event.getToBlock().getLocation());
         location = new dLocation(event.getBlock().getLocation());
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
-        cancelled = event.isCancelled();
+        material = new dMaterial(event.getBlock());
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

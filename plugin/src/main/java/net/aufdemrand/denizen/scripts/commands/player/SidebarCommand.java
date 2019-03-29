@@ -7,7 +7,6 @@ import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.tags.BukkitTagContext;
 import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -102,7 +101,7 @@ public class SidebarCommand extends AbstractCommand {
     }
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         Element action = scriptEntry.getElement("action");
         Element elTitle = scriptEntry.getElement("title");
@@ -189,7 +188,7 @@ public class SidebarCommand extends AbstractCommand {
         switch (Action.valueOf(action.asString())) {
 
             case ADD:
-                for (dPlayer player : players.filter(dPlayer.class)) {
+                for (dPlayer player : players.filter(dPlayer.class, scriptEntry)) {
                     if (player == null || !player.isValid()) {
                         dB.echoError("Invalid player!");
                         continue;
@@ -229,7 +228,7 @@ public class SidebarCommand extends AbstractCommand {
                 break;
 
             case REMOVE:
-                for (dPlayer player : players.filter(dPlayer.class)) {
+                for (dPlayer player : players.filter(dPlayer.class, scriptEntry)) {
                     if (player == null || !player.isValid()) {
                         dB.echoError("Invalid player!");
                         continue;
@@ -299,7 +298,7 @@ public class SidebarCommand extends AbstractCommand {
                 break;
 
             case SET:
-                for (dPlayer player : players.filter(dPlayer.class)) {
+                for (dPlayer player : players.filter(dPlayer.class, scriptEntry)) {
                     if (player == null || !player.isValid()) {
                         dB.echoError("Invalid player!");
                         continue;

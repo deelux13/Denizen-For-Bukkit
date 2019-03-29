@@ -5,11 +5,9 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -19,11 +17,12 @@ public class ItemMergesScriptEvent extends BukkitScriptEvent implements Listener
 
     // <--[event]
     // @Events
-    // item merges (in <area>)
-    // <item> merges (in <area>)
-    // <material> merges (in <area>)
+    // item merges
+    // <item> merges
+    // <material> merges
     //
-    // @Regex ^on [^\s]+ merges( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ merges$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -58,9 +57,7 @@ public class ItemMergesScriptEvent extends BukkitScriptEvent implements Listener
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String item_test = CoreUtilities.getXthArg(0, lower);
+        String item_test = path.eventArgLowerAt(0);
 
         if (!tryItem(item, item_test)) {
             return false;
@@ -76,16 +73,6 @@ public class ItemMergesScriptEvent extends BukkitScriptEvent implements Listener
     @Override
     public String getName() {
         return "ItemMerges";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        ItemMergeEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -117,9 +104,7 @@ public class ItemMergesScriptEvent extends BukkitScriptEvent implements Listener
         location = new dLocation(target.getLocation());
         item = new dItem(entity.getItemStack());
         this.entity = new dEntity(entity);
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

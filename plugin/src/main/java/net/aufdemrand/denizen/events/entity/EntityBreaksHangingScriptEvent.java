@@ -5,14 +5,12 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dCuboid;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
@@ -21,12 +19,13 @@ public class EntityBreaksHangingScriptEvent extends BukkitScriptEvent implements
 
     // <--[event]
     // @Events
-    // entity breaks hanging (because <cause>) (in <area>)
-    // entity breaks <hanging> (because <cause>) (in <area>)
-    // <entity> breaks hanging (because <cause>) (in <area>)
-    // <entity> breaks <hanging> (because <cause>) (in <area>)
+    // entity breaks hanging (because <cause>)
+    // entity breaks <hanging> (because <cause>)
+    // <entity> breaks hanging (because <cause>)
+    // <entity> breaks <hanging> (because <cause>)
     //
-    // @Regex ^on [^\s]+ breaks [^\s]+( because [^\s]+)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ breaks [^\s]+( because [^\s]+)?$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -66,10 +65,8 @@ public class EntityBreaksHangingScriptEvent extends BukkitScriptEvent implements
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String entName = CoreUtilities.getXthArg(0, lower);
-        String hang = CoreUtilities.getXthArg(2, lower);
+        String entName = path.eventArgLowerAt(0);
+        String hang = path.eventArgLowerAt(2);
 
         if (!tryEntity(breaker, entName)) {
             return false;
@@ -83,7 +80,7 @@ public class EntityBreaksHangingScriptEvent extends BukkitScriptEvent implements
             return false;
         }
 
-        if (CoreUtilities.xthArgEquals(3, lower, "because") && !CoreUtilities.getXthArg(4, lower).equals(CoreUtilities.toLowerCase(cause.asString()))) {
+        if (path.eventArgLowerAt(3).equals("because") && !path.eventArgLowerAt(4).equals(CoreUtilities.toLowerCase(cause.asString()))) {
             return false;
         }
 
@@ -93,16 +90,6 @@ public class EntityBreaksHangingScriptEvent extends BukkitScriptEvent implements
     @Override
     public String getName() {
         return "EntityBreaksHanging";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        HangingBreakByEntityEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -153,9 +140,7 @@ public class EntityBreaksHangingScriptEvent extends BukkitScriptEvent implements
         location = new dLocation(hanging.getLocation());
         breaker = new dEntity(event.getRemover());
         cuboids = null;
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

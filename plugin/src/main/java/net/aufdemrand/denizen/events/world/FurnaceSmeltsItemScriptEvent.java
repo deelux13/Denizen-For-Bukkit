@@ -3,11 +3,9 @@ package net.aufdemrand.denizen.events.world;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
@@ -16,12 +14,13 @@ public class FurnaceSmeltsItemScriptEvent extends BukkitScriptEvent implements L
 
     // <--[event]
     // @Events
-    // furnace smelts item (into <item>) (in <area>)
-    // furnace smelts <item> (into <item>) (in <area>)
+    // furnace smelts item (into <item>)
+    // furnace smelts <item> (into <item>)
     //
     // @Cancellable true
     //
-    // @Regex ^on furnace smelts [^\s]+( into [^\s]+)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on furnace smelts [^\s]+( into [^\s]+)?$
+    // @Switch in <area>
     //
     // @Triggers when a furnace smelts an item.
     //
@@ -52,15 +51,13 @@ public class FurnaceSmeltsItemScriptEvent extends BukkitScriptEvent implements L
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String srcItem = CoreUtilities.getXthArg(2, lower);
+        String srcItem = path.eventArgLowerAt(2);
         if (!tryItem(source_item, srcItem)) {
             return false;
         }
 
-        if (CoreUtilities.getXthArg(3, lower).equals("into")) {
-            String resItem = CoreUtilities.getXthArg(4, lower);
+        if (path.eventArgLowerAt(3).equals("into")) {
+            String resItem = path.eventArgLowerAt(4);
             if (!tryItem(result_item, resItem)) {
                 return false;
             }
@@ -71,16 +68,6 @@ public class FurnaceSmeltsItemScriptEvent extends BukkitScriptEvent implements L
     @Override
     public String getName() {
         return "FurnaceSmelts";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        FurnaceSmeltEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -111,10 +98,8 @@ public class FurnaceSmeltsItemScriptEvent extends BukkitScriptEvent implements L
         location = new dLocation(event.getBlock().getLocation());
         source_item = new dItem(event.getSource());
         result_item = new dItem(event.getResult());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
+        fire(event);
         event.setResult(result_item.getItemStack());
-        event.setCancelled(cancelled);
     }
 }

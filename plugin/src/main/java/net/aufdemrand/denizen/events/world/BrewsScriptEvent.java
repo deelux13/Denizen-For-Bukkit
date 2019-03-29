@@ -3,11 +3,9 @@ package net.aufdemrand.denizen.events.world;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dInventory;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.BrewEvent;
@@ -16,9 +14,10 @@ public class BrewsScriptEvent extends BukkitScriptEvent implements Listener {
 
     // <--[event]
     // @Events
-    // brewing stand brews (in <area>)
+    // brewing stand brews
     //
-    // @Regex ^on brewing stand brews( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on brewing stand brews$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -55,16 +54,6 @@ public class BrewsScriptEvent extends BukkitScriptEvent implements Listener {
     }
 
     @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BrewEvent.getHandlerList().unregister(this);
-    }
-
-    @Override
     public boolean applyDetermination(ScriptContainer container, String determination) {
         return super.applyDetermination(container, determination);
     }
@@ -84,9 +73,7 @@ public class BrewsScriptEvent extends BukkitScriptEvent implements Listener {
     public void onBrews(BrewEvent event) {
         location = new dLocation(event.getBlock().getLocation());
         inventory = dInventory.mirrorBukkitInventory(event.getContents());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

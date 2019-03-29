@@ -4,12 +4,10 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -19,10 +17,11 @@ public class PotionSplashScriptEvent extends BukkitScriptEvent implements Listen
 
     // <--[event]
     // @Events
-    // potion splash (in <area>)
-    // <item> splashes (in <area>)
+    // potion splash
+    // <item> splashes
     //
-    // @Regex ^on [^\s]+ splashes( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ splashes$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -56,25 +55,13 @@ public class PotionSplashScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String iTest = CoreUtilities.getXthArg(0, lower);
+        String iTest = path.eventArgLowerAt(0);
         return tryItem(potion, iTest) && runInCheck(path, location);
     }
 
     @Override
     public String getName() {
         return "PotionSplash";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PotionSplashEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -108,9 +95,7 @@ public class PotionSplashScriptEvent extends BukkitScriptEvent implements Listen
         for (Entity e : event.getAffectedEntities()) {
             entities.add(new dEntity(e).identify());
         }
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

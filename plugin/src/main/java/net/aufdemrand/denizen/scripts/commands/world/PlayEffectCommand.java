@@ -3,11 +3,9 @@ package net.aufdemrand.denizen.scripts.commands.world;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.nms.NMSHandler;
 import net.aufdemrand.denizen.nms.abstracts.ParticleHelper;
-import net.aufdemrand.denizen.nms.interfaces.Effect;
 import net.aufdemrand.denizen.nms.interfaces.Particle;
 import net.aufdemrand.denizen.objects.*;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -15,13 +13,12 @@ import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.scripts.ScriptEntry;
 import net.aufdemrand.denizencore.scripts.commands.AbstractCommand;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
+import org.bukkit.Effect;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 
 // <--[language]
@@ -70,7 +67,7 @@ public class PlayEffectCommand extends AbstractCommand {
                     scriptEntry.addObject("no_offset", new Element(true));
                 }
 
-                scriptEntry.addObject("location", arg.asType(dList.class).filter(dLocation.class));
+                scriptEntry.addObject("location", arg.asType(dList.class).filter(dLocation.class, scriptEntry));
                 continue;
             }
             else if (!scriptEntry.hasObject("effect") &&
@@ -85,15 +82,8 @@ public class PlayEffectCommand extends AbstractCommand {
                 }
                 else if (arg.matches("random")) {
                     // Get another effect if "RANDOM" is used
-                    if (CoreUtilities.getRandom().nextDouble() < 0.5) {
-                        // Make sure the new effect is not an invisible effect
-                        List<Particle> visible = particleHelper.getVisibleParticles();
-                        scriptEntry.addObject("particleeffect", visible.get(CoreUtilities.getRandom().nextInt(visible.size())));
-                    }
-                    else {
-                        List<Effect> visual = particleHelper.getVisualEffects();
-                        scriptEntry.addObject("effect", visual.get(CoreUtilities.getRandom().nextInt(visual.size())));
-                    }
+                    List<Particle> visible = particleHelper.getVisibleParticles();
+                    scriptEntry.addObject("particleeffect", visible.get(CoreUtilities.getRandom().nextInt(visible.size())));
                     continue;
                 }
                 else if (arg.startsWith("iconcrack_")) {
@@ -130,9 +120,12 @@ public class PlayEffectCommand extends AbstractCommand {
                     }
                     continue;
                 }
-                else if (particleHelper.hasEffect(arg.getValue())) {
-                    scriptEntry.addObject("effect", particleHelper.getEffect(arg.getValue()));
+                else if (arg.matchesEnum(Effect.values())) {
+                    scriptEntry.addObject("effect", Effect.valueOf(arg.getValue().toUpperCase()));
                     continue;
+                }
+                else if (NMSHandler.getInstance().getParticleHelper().effectRemap.containsKey(arg.getValue().toUpperCase())) {
+                    scriptEntry.addObject("effect", NMSHandler.getInstance().getParticleHelper().effectRemap.get(arg.getValue().toUpperCase()));
                 }
             }
             if (!scriptEntry.hasObject("radius")
@@ -174,7 +167,7 @@ public class PlayEffectCommand extends AbstractCommand {
                     && arg.matchesArgumentList(dPlayer.class)
                     && arg.matchesPrefix("targets", "target", "t")) {
 
-                scriptEntry.addObject("targets", arg.asType(dList.class).filter(dPlayer.class));
+                scriptEntry.addObject("targets", arg.asType(dList.class).filter(dPlayer.class, scriptEntry));
             }
             else {
                 arg.reportUnhandled();
@@ -206,7 +199,7 @@ public class PlayEffectCommand extends AbstractCommand {
     }
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         // Extract objects from ScriptEntry
         List<dLocation> locations = (List<dLocation>) scriptEntry.getObject("location");
@@ -226,7 +219,7 @@ public class PlayEffectCommand extends AbstractCommand {
 
         // Report to dB
         if (scriptEntry.dbCallShouldDebug()) {
-            dB.report(scriptEntry, getName(), (effect != null ? aH.debugObj("effect", effect.getName()) :
+            dB.report(scriptEntry, getName(), (effect != null ? aH.debugObj("effect", effect.name()) :
                     particleEffect != null ? aH.debugObj("special effect", particleEffect.getName()) :
                             (iconcrack != null ? iconcrack.debug()
                                     : blockcrack != null ? blockcrack.debug()
@@ -253,12 +246,12 @@ public class PlayEffectCommand extends AbstractCommand {
                     if (targets != null) {
                         for (dPlayer player : targets) {
                             if (player.isValid() && player.isOnline()) {
-                                effect.playFor(player.getPlayerEntity(), location, data.asInt());
+                                player.getPlayerEntity().playEffect(location, effect, data.asInt()); // TODO: 1.13
                             }
                         }
                     }
                     else {
-                        effect.play(location, data.asInt(), radius.asInt());
+                        location.getWorld().playEffect(location, effect, data.asInt(), radius.asInt());
                     }
                 }
             }

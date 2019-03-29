@@ -4,12 +4,10 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Sheep;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -19,11 +17,12 @@ public class PlayerShearsScriptEvent extends BukkitScriptEvent implements Listen
 
     // <--[event]
     // @Events
-    // player shears entity (in <area>)
-    // player shears <entity> (in <area>)
-    // player shears <color> sheep (in <area>)
+    // player shears entity
+    // player shears <entity>
+    // player shears <color> sheep
     //
-    // @Regex ^on player shears [^\s]+( sheep)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player shears [^\s]+( sheep)?$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -49,15 +48,13 @@ public class PlayerShearsScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String ent = CoreUtilities.xthArgEquals(3, lower, "sheep") ? "sheep" : CoreUtilities.getXthArg(2, lower);
+        String ent = path.eventArgLowerAt(3).equals("sheep") ? "sheep" : path.eventArgLowerAt(2);
 
         if (!ent.equals("sheep") && !tryEntity(entity, ent)) {
             return false;
         }
 
-        String color = CoreUtilities.xthArgEquals(3, lower, "sheep") ? CoreUtilities.getXthArg(2, lower) : "";
+        String color = path.eventArgLowerAt(3).equals("sheep") ? path.eventArgLowerAt(2) : "";
         if (color.length() > 0 && !color.equals(CoreUtilities.toLowerCase(((Sheep) entity.getBukkitEntity()).getColor().name()))) {
             return false;
         }
@@ -72,16 +69,6 @@ public class PlayerShearsScriptEvent extends BukkitScriptEvent implements Listen
     @Override
     public String getName() {
         return "PlayerShears";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerShearEntityEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -111,9 +98,7 @@ public class PlayerShearsScriptEvent extends BukkitScriptEvent implements Listen
             return;
         }
         entity = new dEntity(event.getEntity());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

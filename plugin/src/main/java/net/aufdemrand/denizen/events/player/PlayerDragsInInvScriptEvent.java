@@ -13,7 +13,6 @@ import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -26,10 +25,11 @@ public class PlayerDragsInInvScriptEvent extends BukkitScriptEvent implements Li
 
     // <--[event]
     // @Events
-    // player drags in inventory (in_area <area>)
-    // player drags (<item>) (in <inventory>) (in_area <area>)
+    // player drags in inventory
+    // player drags (<item>) (in <inventory>)
     //
     // @Regex ^on player drags( ^[\s]+)?(in [^\s]+)?( in_area ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Switch in_area <area>
     //
     // @Cancellable true
     //
@@ -55,7 +55,6 @@ public class PlayerDragsInInvScriptEvent extends BukkitScriptEvent implements Li
     public dList raw_slots;
     private dPlayer entity;
     private dInventory dInv;
-    private boolean manual_cancelled;
     public InventoryDragEvent event;
 
     @Override
@@ -66,12 +65,10 @@ public class PlayerDragsInInvScriptEvent extends BukkitScriptEvent implements Li
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        String arg2 = CoreUtilities.getXthArg(2, lower);
-        String arg3 = CoreUtilities.getXthArg(3, lower);
-        String arg4 = CoreUtilities.getXthArg(4, lower);
+        String arg2 = path.eventArgLowerAt(2);
+        String arg3 = path.eventArgLowerAt(3);
+        String arg4 = path.eventArgLowerAt(4);
         String inv = arg2.equals("in") ? arg3 : arg3.equals("in") ? arg4 : "";
         String nname = NotableManager.isSaved(dInv) ?
                 CoreUtilities.toLowerCase(NotableManager.getSavedId(dInv)) :
@@ -92,16 +89,6 @@ public class PlayerDragsInInvScriptEvent extends BukkitScriptEvent implements Li
     @Override
     public String getName() {
         return "PlayerDragsInInventory";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        InventoryDragEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -148,10 +135,9 @@ public class PlayerDragsInInvScriptEvent extends BukkitScriptEvent implements Li
         for (Integer raw_slot : event.getRawSlots()) {
             raw_slots.add(String.valueOf(raw_slot + 1));
         }
-        cancelled = event.isCancelled();
-        boolean wasCancelled = cancelled;
+        boolean wasCancelled = event.isCancelled();
         this.event = event;
-        fire();
+        fire(event);
         if (cancelled && !wasCancelled) {
             final InventoryHolder holder = inventory.getHolder();
             new BukkitRunnable() {
@@ -164,6 +150,5 @@ public class PlayerDragsInInvScriptEvent extends BukkitScriptEvent implements Li
                 }
             }.runTaskLater(DenizenAPI.getCurrentInstance(), 1);
         }
-        event.setCancelled(cancelled);
     }
 }

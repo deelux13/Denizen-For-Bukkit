@@ -4,13 +4,11 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerToggleSprintEvent;
@@ -19,11 +17,12 @@ public class PlayerSprintScriptEvent extends BukkitScriptEvent implements Listen
 
     // <--[event]
     // @Events
-    // player toggles sprinting (in <area>)
-    // player starts sprinting (in <area>)
-    // player stops sprinting (in <area>)
+    // player toggles sprinting
+    // player starts sprinting
+    // player stops sprinting
     //
-    // @Regex ^on player (toggles|starts\stops) sprinting( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player (toggles|starts\stops) sprinting$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -49,9 +48,7 @@ public class PlayerSprintScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String cmd = CoreUtilities.getXthArg(1, lower);
+        String cmd = path.eventArgLowerAt(1);
         if (cmd.equals("starts") && !state) {
             return false;
         }
@@ -65,16 +62,6 @@ public class PlayerSprintScriptEvent extends BukkitScriptEvent implements Listen
     @Override
     public String getName() {
         return "PlayerSprints";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerToggleSprintEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -101,9 +88,7 @@ public class PlayerSprintScriptEvent extends BukkitScriptEvent implements Listen
             return;
         }
         state = event.isSprinting();
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

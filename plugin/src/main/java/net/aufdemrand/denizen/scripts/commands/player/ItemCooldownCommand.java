@@ -4,7 +4,6 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.objects.dMaterial;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Duration;
 import net.aufdemrand.denizencore.objects.aH;
@@ -24,7 +23,7 @@ public class ItemCooldownCommand extends AbstractCommand {
             if (!scriptEntry.hasObject("materials")
                     && (arg.matchesArgumentType(dMaterial.class)
                     || arg.matchesArgumentType(dList.class))) {
-                scriptEntry.addObject("materials", arg.asType(dList.class).filter(dMaterial.class));
+                scriptEntry.addObject("materials", arg.asType(dList.class).filter(dMaterial.class, scriptEntry));
             }
             else if (!scriptEntry.hasObject("duration")
                     && arg.matchesPrefix("d", "duration")
@@ -44,7 +43,7 @@ public class ItemCooldownCommand extends AbstractCommand {
     }
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         ArrayList<dMaterial> materials = (ArrayList<dMaterial>) scriptEntry.getObject("materials");
         Duration duration = scriptEntry.getdObject("duration");

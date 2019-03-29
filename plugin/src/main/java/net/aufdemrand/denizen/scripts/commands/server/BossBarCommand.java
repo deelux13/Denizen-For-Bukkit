@@ -3,7 +3,6 @@ package net.aufdemrand.denizen.scripts.commands.server;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -95,7 +94,7 @@ public class BossBarCommand extends AbstractCommand {
     public final static Map<String, BossBar> bossBarMap = new HashMap<String, BossBar>();
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         Element id = scriptEntry.getElement("id");
         Element action = scriptEntry.getElement("action");
@@ -127,7 +126,7 @@ public class BossBarCommand extends AbstractCommand {
                     return;
                 }
                 String barTitle = title != null ? title.asString() : "";
-                List<dPlayer> barPlayers = players.filter(dPlayer.class);
+                List<dPlayer> barPlayers = players.filter(dPlayer.class, scriptEntry);
                 double barProgress = progress != null ? progress.asDouble() : 1D;
                 BarColor barColor = color != null ? BarColor.valueOf(color.asString().toUpperCase()) : BarColor.WHITE;
                 BarStyle barStyle = style != null ? BarStyle.valueOf(style.asString().toUpperCase()) : BarStyle.SOLID;
@@ -169,7 +168,7 @@ public class BossBarCommand extends AbstractCommand {
                     bossBar1.setStyle(BarStyle.valueOf(style.asString().toUpperCase()));
                 }
                 if (players != null) {
-                    for (dPlayer player : players.filter(dPlayer.class)) {
+                    for (dPlayer player : players.filter(dPlayer.class, scriptEntry)) {
                         bossBar1.addPlayer(player.getPlayerEntity());
                     }
                 }
@@ -182,7 +181,7 @@ public class BossBarCommand extends AbstractCommand {
                 }
                 if (players != null) {
                     BossBar bar = bossBarMap.get(idString);
-                    for (dPlayer player : players.filter(dPlayer.class)) {
+                    for (dPlayer player : players.filter(dPlayer.class, scriptEntry)) {
                         bar.removePlayer(player.getPlayerEntity());
                     }
                     break;

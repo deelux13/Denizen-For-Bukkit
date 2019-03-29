@@ -6,12 +6,10 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -25,12 +23,13 @@ public class PlayerPicksUpScriptEvent extends BukkitScriptEvent implements Liste
 
     // <--[event]
     // @Events
-    // player picks up item (in <area>)
-    // player picks up <item> (in <area>)
-    // player takes item (in <area>)
-    // player takes <item> (in <area>)
+    // player picks up item
+    // player picks up <item>
+    // player takes item
+    // player takes <item>
     //
-    // @Regex ^on player (picks up|takes) [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player (picks up|takes) [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -70,10 +69,8 @@ public class PlayerPicksUpScriptEvent extends BukkitScriptEvent implements Liste
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String iTest = CoreUtilities.xthArgEquals(1, lower, "picks") ?
-                CoreUtilities.getXthArg(3, lower) : CoreUtilities.getXthArg(2, lower);
+        String iTest = path.eventArgLowerAt(1).equals("picks") ?
+                path.eventArgLowerAt(3) : path.eventArgLowerAt(2);
         if (!tryItem(item, iTest)) {
             return false;
         }
@@ -83,16 +80,6 @@ public class PlayerPicksUpScriptEvent extends BukkitScriptEvent implements Liste
     @Override
     public String getName() {
         return "PlayerPicksUp";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerPickupItemEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -139,17 +126,13 @@ public class PlayerPicksUpScriptEvent extends BukkitScriptEvent implements Liste
         location = new dLocation(itemEntity.getLocation());
         item = new dItem(itemEntity.getItemStack());
         entity = new dEntity(itemEntity);
-        cancelled = event.isCancelled();
         itemChanged = false;
         this.event = event;
-        fire();
+        fire(event);
         if (itemChanged) {
             itemEntity.setItemStack(item.getItemStack());
             editedItems.add(itemUUID);
             event.setCancelled(true);
-        }
-        else {
-            event.setCancelled(cancelled);
         }
     }
 }

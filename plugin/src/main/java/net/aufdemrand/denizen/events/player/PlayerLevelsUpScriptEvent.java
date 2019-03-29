@@ -4,27 +4,24 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLevelChangeEvent;
-
-import java.util.List;
 
 public class PlayerLevelsUpScriptEvent extends BukkitScriptEvent implements Listener {
 
     // <--[event]
     // @Events
-    // player levels up (from <level>) (to <level>) (in <area>)
+    // player levels up (from <level>) (to <level>)
     //
-    // @Regex ^on player levels up( from [^\s]+)?( to [^\s]+)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player levels up( from [^\s]+)?( to [^\s]+)?$
+    // @Switch in <area>
     //
     // @Triggers when a player levels up.
     //
@@ -51,17 +48,15 @@ public class PlayerLevelsUpScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        List<String> data = CoreUtilities.split(lower, ' ');
-        for (int index = 0; index < data.size(); index++) {
-            if (data.get(index).equals("from")) {
-                if (aH.getIntegerFrom(data.get(index + 1)) != old_level) {
+        String[] data = path.eventArgsLower;
+        for (int index = 3; index < data.length; index++) {
+            if (data[index].equals("from")) {
+                if (aH.getIntegerFrom(data[index + 1]) != old_level) {
                     return false;
                 }
             }
-            if (data.get(index).equals("to")) {
-                if (aH.getIntegerFrom(data.get(index + 1)) != new_level) {
+            if (data[index].equals("to")) {
+                if (aH.getIntegerFrom(data[index + 1]) != new_level) {
                     return false;
                 }
             }
@@ -77,16 +72,6 @@ public class PlayerLevelsUpScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "PlayerLevelsUp";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerLevelChangeEvent.getHandlerList().unregister(this);
     }
 
     @Override

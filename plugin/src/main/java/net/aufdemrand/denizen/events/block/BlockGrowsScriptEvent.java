@@ -3,11 +3,9 @@ package net.aufdemrand.denizen.events.block;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockGrowEvent;
@@ -16,10 +14,11 @@ public class BlockGrowsScriptEvent extends BukkitScriptEvent implements Listener
 
     // <--[event]
     // @Events
-    // block grows (in <area>)
-    // <block> grows (in <area>)
+    // block grows
+    // <block> grows
     //
-    // @Regex ^on [^\s]+ grows( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ grows$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -51,9 +50,7 @@ public class BlockGrowsScriptEvent extends BukkitScriptEvent implements Listener
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String mat = CoreUtilities.getXthArg(0, lower);
+        String mat = path.eventArgLowerAt(0);
         if (!tryMaterial(material, mat)) {
             return false;
         }
@@ -66,16 +63,6 @@ public class BlockGrowsScriptEvent extends BukkitScriptEvent implements Listener
     @Override
     public String getName() {
         return "BlockGrows";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BlockGrowEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -97,10 +84,8 @@ public class BlockGrowsScriptEvent extends BukkitScriptEvent implements Listener
     @EventHandler
     public void onBlockGrows(BlockGrowEvent event) {
         location = new dLocation(event.getBlock().getLocation());
-        material = dMaterial.getMaterialFrom(event.getNewState().getType(), event.getNewState().getData().getData());
-        cancelled = event.isCancelled();
+        material = new dMaterial(event.getNewState());
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

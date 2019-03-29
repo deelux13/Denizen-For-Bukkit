@@ -5,13 +5,11 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
 import net.aufdemrand.denizen.objects.dWorld;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.block.BlockState;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,12 +19,13 @@ public class StructureGrowsScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // structure grows (naturally/from bonemeal) (in <area>)
-    // <structure> grows (naturally/from bonemeal) (in <area>)
-    // plant grows (naturally/from bonemeal) (in <area>)
-    // <plant> grows (naturally/from bonemeal) (in <area>)
+    // structure grows (naturally/from bonemeal)
+    // <structure> grows (naturally/from bonemeal)
+    // plant grows (naturally/from bonemeal)
+    // <plant> grows (naturally/from bonemeal)
     //
-    // @Regex ^on [^\s]+ grows( naturally|from bonemeal)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ grows( naturally|from bonemeal)?$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -65,17 +64,15 @@ public class StructureGrowsScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String struct = CoreUtilities.getXthArg(0, lower);
+        String struct = path.eventArgLowerAt(0);
         if (!struct.equals("structure") && !struct.equals("plant") &&
                 !struct.equals(CoreUtilities.toLowerCase(structure.asString()))) {
             return false;
         }
-        if (CoreUtilities.getXthArg(2, lower).equals("from") && !event.isFromBonemeal()) {
+        if (path.eventArgLowerAt(2).equals("from") && !event.isFromBonemeal()) {
             return false;
         }
-        else if (CoreUtilities.getXthArg(2, lower).equals("naturally") && event.isFromBonemeal()) {
+        else if (path.eventArgLowerAt(2).equals("naturally") && event.isFromBonemeal()) {
             return false;
         }
         return runInCheck(path, location);
@@ -84,16 +81,6 @@ public class StructureGrowsScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "StructureGrow";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        StructureGrowEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -130,11 +117,9 @@ public class StructureGrowsScriptEvent extends BukkitScriptEvent implements List
         new_materials = new dList();
         for (BlockState block : event.getBlocks()) {
             blocks.add(new dLocation(block.getLocation()).identify());
-            new_materials.add(dMaterial.getMaterialFrom(block.getType(), block.getRawData()).identify());
+            new_materials.add(new dMaterial(block.getType(), block.getRawData()).identify());
         }
         this.event = event;
-        cancelled = event.isCancelled();
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

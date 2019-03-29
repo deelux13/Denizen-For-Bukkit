@@ -6,7 +6,6 @@ import net.aufdemrand.denizen.npc.traits.FishingTrait;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dNPC;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -33,7 +32,7 @@ public class FishCommand extends AbstractCommand {
             }
             else if (!scriptEntry.hasObject("stop")
                     && arg.matches("stop")) {
-                scriptEntry.addObject("stop", Element.TRUE);
+                scriptEntry.addObject("stop", new Element(true));
             }
             else if (!scriptEntry.hasObject("percent")
                     && arg.matchesPrefix("catchpercent", "percent", "chance", "c")
@@ -48,7 +47,7 @@ public class FishCommand extends AbstractCommand {
         }
 
         scriptEntry.defaultObject("catch", new Element("NONE"))
-                .defaultObject("stop", Element.FALSE)
+                .defaultObject("stop", new Element(false))
                 .defaultObject("percent", new Element(65));
 
         if (!((BukkitScriptEntryData) scriptEntry.entryData).hasNPC() || !((BukkitScriptEntryData) scriptEntry.entryData).getNPC().isSpawned()) {
@@ -58,7 +57,7 @@ public class FishCommand extends AbstractCommand {
     }
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         dLocation location = scriptEntry.getdObject("location");
         Element catchtype = scriptEntry.getElement("catch");

@@ -8,7 +8,6 @@ import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.Utilities;
 import net.aufdemrand.denizen.utilities.blocks.CuboidBlockSet;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.TagRunnable;
@@ -115,7 +114,7 @@ public class SchematicCommand extends AbstractCommand implements Holdable, Liste
 
 
     @Override
-    public void execute(final ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(final ScriptEntry scriptEntry) {
 
         Element angle = scriptEntry.getElement("angle");
         Element type = scriptEntry.getElement("type");
@@ -407,7 +406,7 @@ public class SchematicCommand extends AbstractCommand implements Holdable, Liste
             if (attribute.hasContext(1) && dLocation.matches(attribute.getContext(1))) {
                 dLocation location = dLocation.valueOf(attribute.getContext(1));
                 BlockData block = set.blockAt(location.getX(), location.getY(), location.getZ());
-                event.setReplaced(dMaterial.getMaterialFrom(block.getMaterial(), block.getData())
+                event.setReplaced(new dMaterial(block)
                         .getAttribute(attribute.fulfill(1)));
                 return;
             }

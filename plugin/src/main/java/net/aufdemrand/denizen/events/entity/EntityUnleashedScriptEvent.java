@@ -2,12 +2,10 @@ package net.aufdemrand.denizen.events.entity;
 
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityUnleashEvent;
@@ -16,10 +14,11 @@ public class EntityUnleashedScriptEvent extends BukkitScriptEvent implements Lis
 
     // <--[event]
     // @Events
-    // entity unleashed (because <reason>) (in <area>)
-    // <entity> unleashed (because <reason>) (in <area>)
+    // entity unleashed (because <reason>)
+    // <entity> unleashed (because <reason>)
     //
-    // @Regex ^on [^\s]+ unleashed( because [^\s]+)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ unleashed( because [^\s]+)?$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -52,14 +51,12 @@ public class EntityUnleashedScriptEvent extends BukkitScriptEvent implements Lis
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(0, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(0))) {
             return false;
         }
 
-        if (lower.contains("because") && !CoreUtilities.xthArgEquals(3, lower, CoreUtilities.toLowerCase(reason.asString()))) {
+        if (path.eventArgAt(2).equals("because") && !path.eventArgLowerAt(3).equals(CoreUtilities.toLowerCase(reason.asString()))) {
             return false;
         }
 
@@ -73,16 +70,6 @@ public class EntityUnleashedScriptEvent extends BukkitScriptEvent implements Lis
     @Override
     public String getName() {
         return "EntityUnleashed";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityUnleashEvent.getHandlerList().unregister(this);
     }
 
     @Override

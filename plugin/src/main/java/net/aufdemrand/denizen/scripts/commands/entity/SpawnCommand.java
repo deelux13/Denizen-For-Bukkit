@@ -4,7 +4,6 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -26,7 +25,7 @@ public class SpawnCommand extends AbstractCommand {
             if (!scriptEntry.hasObject("entities")
                     && arg.matchesArgumentList(dEntity.class)) {
 
-                scriptEntry.addObject("entities", arg.asType(dList.class).filter(dEntity.class));
+                scriptEntry.addObject("entities", arg.asType(dList.class).filter(dEntity.class, scriptEntry));
             }
             else if (!scriptEntry.hasObject("location")
                     && arg.matchesArgumentType(dLocation.class)) {
@@ -70,7 +69,7 @@ public class SpawnCommand extends AbstractCommand {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void execute(final ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(final ScriptEntry scriptEntry) {
 
         // Get objects
         List<dEntity> entities = (List<dEntity>) scriptEntry.getObject("entities");
@@ -106,11 +105,7 @@ public class SpawnCommand extends AbstractCommand {
 
             entity.spawnAt(loc);
 
-            // Only add to entityList after the entities have been
-            // spawned, otherwise you'll get something like "e@skeleton"
-            // instead of "e@57" on it
-
-            entityList.add(entity.toString());
+            entityList.addObject(entity);
 
             if (persistent && entity.isLivingEntity()) {
                 entity.getLivingEntity().setRemoveWhenFarAway(false);
@@ -125,5 +120,8 @@ public class SpawnCommand extends AbstractCommand {
         // can be fetched.
 
         scriptEntry.addObject("spawned_entities", entityList);
+        if (entities.size() != 0) {
+            scriptEntry.addObject("spawned_entity", entities.get(0));
+        }
     }
 }

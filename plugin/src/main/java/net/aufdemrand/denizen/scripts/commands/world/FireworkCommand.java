@@ -6,7 +6,6 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.utilities.Conversion;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -57,12 +56,12 @@ public class FireworkCommand extends AbstractCommand {
             else if (!scriptEntry.hasObject("primary")
                     && arg.matchesPrefix("primary")
                     && arg.matchesArgumentList(dColor.class)) {
-                scriptEntry.addObject("primary", arg.asType(dList.class).filter(dColor.class));
+                scriptEntry.addObject("primary", arg.asType(dList.class).filter(dColor.class, scriptEntry));
             }
             else if (!scriptEntry.hasObject("fade")
                     && arg.matchesPrefix("fade")
                     && arg.matchesArgumentList(dColor.class)) {
-                scriptEntry.addObject("fade", arg.asType(dList.class).filter(dColor.class));
+                scriptEntry.addObject("fade", arg.asType(dList.class).filter(dColor.class, scriptEntry));
             }
             else {
                 arg.reportUnhandled();
@@ -81,7 +80,7 @@ public class FireworkCommand extends AbstractCommand {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void execute(final ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(final ScriptEntry scriptEntry) {
         // Get objects
 
         final dLocation location = scriptEntry.hasObject("location") ?

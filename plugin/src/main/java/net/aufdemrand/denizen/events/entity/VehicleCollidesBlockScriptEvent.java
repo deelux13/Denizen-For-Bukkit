@@ -4,11 +4,9 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.vehicle.VehicleBlockCollisionEvent;
@@ -18,12 +16,13 @@ public class VehicleCollidesBlockScriptEvent extends BukkitScriptEvent implement
     // TODO: de-collide with 'collides with entity'
     // <--[event]
     // @Events
-    // vehicle collides with block (in <area>)
-    // vehicle collides with <material> (in <area>)
-    // <vehicle> collides with block (in <area>)
-    // <vehicle> collides with <material> (in <area>)
+    // vehicle collides with block
+    // vehicle collides with <material>
+    // <vehicle> collides with block
+    // <vehicle> collides with <material>
     //
-    // @Regex ^on [^\s]+ collides with [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ collides with [^\s]+$
+    // @Switch in <area>
     //
     // @Triggers when a vehicle collides with a block.
     //
@@ -52,14 +51,12 @@ public class VehicleCollidesBlockScriptEvent extends BukkitScriptEvent implement
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(vehicle, CoreUtilities.getXthArg(0, lower))) {
+        if (!tryEntity(vehicle, path.eventArgLowerAt(0))) {
             return false;
         }
 
-        if (!tryMaterial(material, CoreUtilities.getXthArg(3, lower))) {
+        if (!tryMaterial(material, path.eventArgLowerAt(3))) {
             return false;
         }
 
@@ -73,16 +70,6 @@ public class VehicleCollidesBlockScriptEvent extends BukkitScriptEvent implement
     @Override
     public String getName() {
         return "VehicleCollidesBlock";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        VehicleBlockCollisionEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -105,7 +92,7 @@ public class VehicleCollidesBlockScriptEvent extends BukkitScriptEvent implement
     public void onVehicleCollidesBlock(VehicleBlockCollisionEvent event) {
         vehicle = new dEntity(event.getVehicle());
         location = new dLocation(event.getBlock().getLocation());
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
+        material = new dMaterial(event.getBlock());
         this.event = event;
         fire();
     }

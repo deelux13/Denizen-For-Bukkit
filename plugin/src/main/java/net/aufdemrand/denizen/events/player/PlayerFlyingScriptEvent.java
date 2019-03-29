@@ -4,13 +4,11 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
@@ -19,11 +17,12 @@ public class PlayerFlyingScriptEvent extends BukkitScriptEvent implements Listen
 
     // <--[event]
     // @Events
-    // player toggles flying (in <area>)
-    // player starts flying (in <area>)
-    // player stops flying (in <area>)
+    // player toggles flying
+    // player starts flying
+    // player stops flying
     //
-    // @Regex ^on player (toggles|starts|stops) flying( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player (toggles|starts|stops) flying$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -50,9 +49,7 @@ public class PlayerFlyingScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String cmd = CoreUtilities.getXthArg(1, lower);
+        String cmd = path.eventArgLowerAt(1);
         if (cmd.equals("starts") && !state) {
             return false;
         }
@@ -65,17 +62,7 @@ public class PlayerFlyingScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public String getName() {
-        return "PlayerSpring";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerToggleFlightEvent.getHandlerList().unregister(this);
+        return "PlayerFlying";
     }
 
     @Override
@@ -102,9 +89,7 @@ public class PlayerFlyingScriptEvent extends BukkitScriptEvent implements Listen
             return;
         }
         state = event.isFlying();
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

@@ -4,12 +4,10 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPortalExitEvent;
@@ -18,10 +16,11 @@ public class EntityExitsPortalScriptEvent extends BukkitScriptEvent implements L
 
     // <--[event]
     // @Events
-    // entity exits portal (in <area>)
-    // <entity> exits portal (in <area>)
+    // entity exits portal
+    // <entity> exits portal
     //
-    // @Regex ^on [^\s]+ exits portal( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ exits portal$
+    // @Switch in <area>
     //
     // @Triggers when an entity exits a portal.
     //
@@ -51,9 +50,7 @@ public class EntityExitsPortalScriptEvent extends BukkitScriptEvent implements L
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String target = CoreUtilities.getXthArg(0, lower);
+        String target = path.eventArgLowerAt(0);
 
         if (!tryEntity(entity, target)) {
             return false;
@@ -69,16 +66,6 @@ public class EntityExitsPortalScriptEvent extends BukkitScriptEvent implements L
     @Override
     public String getName() {
         return "EntityExitsPortal";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityPortalExitEvent.getHandlerList().unregister(this);
     }
 
     @Override

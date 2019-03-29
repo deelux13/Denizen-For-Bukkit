@@ -5,12 +5,10 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerBedEnterEvent;
@@ -19,9 +17,10 @@ public class PlayerEntersBedScriptEvent extends BukkitScriptEvent implements Lis
 
     // <--[event]
     // @Events
-    // player enters bed (in <area>)
+    // player enters bed
     //
-    // @Regex ^on player enters bed( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player enters bed$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -47,24 +46,12 @@ public class PlayerEntersBedScriptEvent extends BukkitScriptEvent implements Lis
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
         return runInCheck(path, location);
     }
 
     @Override
     public String getName() {
         return "PlayerEntersBed";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerBedEnterEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -91,9 +78,7 @@ public class PlayerEntersBedScriptEvent extends BukkitScriptEvent implements Lis
             return;
         }
         location = new dLocation(event.getBed().getLocation());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

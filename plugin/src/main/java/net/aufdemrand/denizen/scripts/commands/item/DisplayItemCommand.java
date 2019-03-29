@@ -1,11 +1,12 @@
 package net.aufdemrand.denizen.scripts.commands.item;
 
+import net.aufdemrand.denizen.nms.NMSHandler;
+import net.aufdemrand.denizen.nms.NMSVersion;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Duration;
 import net.aufdemrand.denizencore.objects.aH;
@@ -13,9 +14,24 @@ import net.aufdemrand.denizencore.scripts.ScriptEntry;
 import net.aufdemrand.denizencore.scripts.commands.AbstractCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Item;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.ItemMergeEvent;
+import org.bukkit.event.inventory.InventoryPickupItemEvent;
+
+import java.util.HashSet;
+import java.util.UUID;
 
 
-public class DisplayItemCommand extends AbstractCommand {
+public class DisplayItemCommand extends AbstractCommand implements Listener {
+
+    @Override
+    public void onEnable() {
+        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_12_R1)) {
+            Bukkit.getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
+        }
+    }
 
     @Override
     public void parseArgs(ScriptEntry scriptEntry) throws InvalidArgumentsException {
@@ -53,8 +69,32 @@ public class DisplayItemCommand extends AbstractCommand {
         }
     }
 
+    public final HashSet<UUID> protectedEntities = new HashSet<>();
+
+    @EventHandler
+    public void onItemMerge(ItemMergeEvent event) {
+        if (protectedEntities.contains(event.getEntity().getUniqueId())
+            || protectedEntities.contains(event.getTarget().getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onItemInventoryPickup(InventoryPickupItemEvent event) {
+        if (protectedEntities.contains(event.getItem().getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onItemEntityPickup(EntityPickupItemEvent event) {
+        if (protectedEntities.contains(event.getItem().getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         dItem item = (dItem) scriptEntry.getObject("item");
         Duration duration = (Duration) scriptEntry.getObject("duration");
@@ -75,6 +115,11 @@ public class DisplayItemCommand extends AbstractCommand {
         dropped.setVelocity(dropped.getVelocity().multiply(0));
         dropped.setPickupDelay(duration.getTicksAsInt() + 1000);
         dropped.setTicksLived(duration.getTicksAsInt() + 1000);
+        if (!dropped.isValid()) {
+            return;
+        }
+        final UUID itemUUID = dropped.getUniqueId();
+        protectedEntities.add(itemUUID);
 
         // Remember the item entity
         scriptEntry.addObject("dropped", new dEntity(dropped));
@@ -86,6 +131,7 @@ public class DisplayItemCommand extends AbstractCommand {
                     public void run() {
                         if (dropped.isValid() && !dropped.isDead()) {
                             dropped.remove();
+                            protectedEntities.remove(itemUUID);
                         }
                     }
                 }, duration.getTicks());

@@ -4,11 +4,9 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,11 +16,12 @@ public class ItemSpawnsScriptEvent extends BukkitScriptEvent implements Listener
 
     // <--[event]
     // @Events
-    // item spawns (in <area>)
-    // <item> spawns (in <area>)
-    // <material> spawns (in <area>)
+    // item spawns
+    // <item> spawns
+    // <material> spawns
     //
-    // @Regex ^on [^\s]+ spawns( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ spawns$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -59,9 +58,7 @@ public class ItemSpawnsScriptEvent extends BukkitScriptEvent implements Listener
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String item_test = CoreUtilities.getXthArg(0, lower);
+        String item_test = path.eventArgLowerAt(0);
 
         if (!tryItem(item, item_test)) {
             return false;
@@ -77,16 +74,6 @@ public class ItemSpawnsScriptEvent extends BukkitScriptEvent implements Listener
     @Override
     public String getName() {
         return "ItemSpawns";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        ItemSpawnEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -114,11 +101,9 @@ public class ItemSpawnsScriptEvent extends BukkitScriptEvent implements Listener
         location = new dLocation(event.getLocation());
         item = new dItem(entity.getItemStack());
         this.entity = new dEntity(entity);
-        cancelled = event.isCancelled();
         this.event = event;
         dEntity.rememberEntity(entity);
-        fire();
+        fire(event);
         dEntity.forgetEntity(entity);
-        event.setCancelled(cancelled);
     }
 }

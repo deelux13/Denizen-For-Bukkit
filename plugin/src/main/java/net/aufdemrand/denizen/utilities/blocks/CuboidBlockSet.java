@@ -295,7 +295,8 @@ public class CuboidBlockSet implements BlockSet {
                         int index = y * width * length + z * width + x;
                         BlockVector pt = new BlockVector(x, y, z);
                         // TODO: 1.13 - move away from legacy IDs somehow?
-                        BlockData block = NMSHandler.getInstance().getBlockHelper().getBlockData(dMaterial.getLegacyMaterial(blocks[index]), blockData[index]);
+                        dMaterial dMat = OldMaterialsHelper.getMaterialFrom(OldMaterialsHelper.getLegacyMaterial(blocks[index]), blockData[index]);
+                        BlockData block = dMat.getNmsBlockData();
                         if (tileEntitiesMap.containsKey(pt)) {
                             CompoundTag otag = NMSHandler.getInstance().createCompoundTag(tileEntitiesMap.get(pt));
                             block.setCompoundTag(otag);

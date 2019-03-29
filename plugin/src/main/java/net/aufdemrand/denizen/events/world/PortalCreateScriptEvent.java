@@ -4,13 +4,11 @@ package net.aufdemrand.denizen.events.world;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dWorld;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,9 +18,10 @@ public class PortalCreateScriptEvent extends BukkitScriptEvent implements Listen
 
     // <--[event]
     // @Events
-    // portal created (because <reason>) (in <area>)
+    // portal created (because <reason>)
     //
-    // @Regex ^on portal created( because [^\s]+)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on portal created( because [^\s]+)?$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -52,9 +51,7 @@ public class PortalCreateScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String rCheck = CoreUtilities.getXthArg(2, lower).equals("because") ? CoreUtilities.getXthArg(3, lower) : CoreUtilities.getXthArg(5, lower);
+        String rCheck = path.eventArgLowerAt(2).equals("because") ? path.eventArgLowerAt(3) : path.eventArgLowerAt(5);
         if (rCheck.length() > 0 && !rCheck.equals(CoreUtilities.toLowerCase(reason.asString()))) {
             return false;
         }
@@ -64,16 +61,6 @@ public class PortalCreateScriptEvent extends BukkitScriptEvent implements Listen
     @Override
     public String getName() {
         return "PortalCreate";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PortalCreateEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -104,8 +91,6 @@ public class PortalCreateScriptEvent extends BukkitScriptEvent implements Listen
             blocks.add(new dLocation(block.getLocation()).identify());
         }
         this.event = event;
-        cancelled = event.isCancelled();
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

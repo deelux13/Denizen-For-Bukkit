@@ -10,7 +10,6 @@ import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -22,10 +21,11 @@ public class PlayerBreaksItemScriptEvent extends BukkitScriptEvent implements Li
 
     // <--[event]
     // @Events
-    // player breaks item (in <area>)
-    // player breaks <item> (in <area>)
+    // player breaks item
+    // player breaks <item>
     //
-    // @Regex ^on player breaks [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player breaks [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -51,9 +51,7 @@ public class PlayerBreaksItemScriptEvent extends BukkitScriptEvent implements Li
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String iCheck = CoreUtilities.getXthArg(2, lower);
+        String iCheck = path.eventArgLowerAt(2);
         if (!tryItem(item, iCheck)) {
             return false;
         }
@@ -63,16 +61,6 @@ public class PlayerBreaksItemScriptEvent extends BukkitScriptEvent implements Li
     @Override
     public String getName() {
         return "PlayerItemBreak";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerItemBreakEvent.getHandlerList().unregister(this);
     }
 
     @Override

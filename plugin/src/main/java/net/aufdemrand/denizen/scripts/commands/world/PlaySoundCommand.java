@@ -1,9 +1,9 @@
 package net.aufdemrand.denizen.scripts.commands.world;
 
+import net.aufdemrand.denizen.nms.NMSHandler;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -11,7 +11,6 @@ import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.scripts.ScriptEntry;
 import net.aufdemrand.denizencore.scripts.commands.AbstractCommand;
 import org.bukkit.Sound;
-import org.bukkit.entity.Player;
 
 import java.util.List;
 
@@ -26,12 +25,12 @@ public class PlaySoundCommand extends AbstractCommand {
             if (!scriptEntry.hasObject("locations")
                     && !scriptEntry.hasObject("entities")
                     && arg.matchesArgumentList(dLocation.class)) {
-                scriptEntry.addObject("locations", arg.asType(dList.class).filter(dLocation.class));
+                scriptEntry.addObject("locations", arg.asType(dList.class).filter(dLocation.class, scriptEntry));
             }
             else if (!scriptEntry.hasObject("locations")
                     && !scriptEntry.hasObject("entities")
                     && arg.matchesArgumentList(dPlayer.class)) {
-                scriptEntry.addObject("entities", arg.asType(dList.class).filter(dPlayer.class));
+                scriptEntry.addObject("entities", arg.asType(dList.class).filter(dPlayer.class, scriptEntry));
             }
             else if (!scriptEntry.hasObject("volume")
                     && arg.matchesPrimitive(aH.PrimitiveType.Double)
@@ -49,7 +48,11 @@ public class PlaySoundCommand extends AbstractCommand {
             }
             else if (!scriptEntry.hasObject("custom")
                     && arg.matches("custom")) {
-                scriptEntry.addObject("custom", Element.TRUE);
+                scriptEntry.addObject("custom", new Element(true));
+            }
+            else if (!scriptEntry.hasObject("sound_category")
+                    && arg.matchesOnePrefix("sound_category")) {
+                scriptEntry.addObject("sound_category", arg.asElement());
             }
             else {
                 arg.reportUnhandled();
@@ -66,13 +69,14 @@ public class PlaySoundCommand extends AbstractCommand {
 
         scriptEntry.defaultObject("volume", new Element(1));
         scriptEntry.defaultObject("pitch", new Element(1));
-        scriptEntry.defaultObject("custom", Element.FALSE);
+        scriptEntry.defaultObject("custom", new Element(false));
+        scriptEntry.defaultObject("sound_category", new Element("MASTER"));
 
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         List<dLocation> locations = (List<dLocation>) scriptEntry.getObject("locations");
         List<dPlayer> players = (List<dPlayer>) scriptEntry.getObject("entities");
@@ -80,6 +84,7 @@ public class PlaySoundCommand extends AbstractCommand {
         Element volume = scriptEntry.getElement("volume");
         Element pitch = scriptEntry.getElement("pitch");
         Element custom = scriptEntry.getElement("custom");
+        Element sound_category = scriptEntry.getElement("sound_category");
 
         if (scriptEntry.dbCallShouldDebug()) {
 
@@ -97,34 +102,26 @@ public class PlaySoundCommand extends AbstractCommand {
             if (locations != null) {
                 if (custom.asBoolean()) {
                     for (dLocation location : locations) {
-                        for (Player player : location.getWorld().getPlayers())
-                        // Note: Randomly defining 100 blocks as maximum hearing distance.
-                        {
-                            if (player.getLocation().distanceSquared(location) < 100 * 100) {
-                                player.playSound(location, sound.asString(),
-                                        volume.asFloat(), pitch.asFloat());
-                            }
-                        }
+                        NMSHandler.getInstance().getSoundHelper().playSound(null, location, sound.asString(), volume.asFloat(),
+                                pitch.asFloat(), sound_category.asString());
                     }
                 }
                 else {
                     for (dLocation location : locations) {
-                        location.getWorld().playSound(location,
-                                Sound.valueOf(sound.asString().toUpperCase()),
-                                volume.asFloat(), pitch.asFloat());
+                        NMSHandler.getInstance().getSoundHelper().playSound(null, location, Sound.valueOf(sound.asString().toUpperCase()),
+                                volume.asFloat(), pitch.asFloat(), sound_category.asString());
                     }
                 }
             }
             else {
                 for (dPlayer player : players) {
                     if (custom.asBoolean()) {
-                        player.getPlayerEntity().playSound(player.getLocation(),
-                                sound.asString(), volume.asFloat(), pitch.asFloat());
+                        NMSHandler.getInstance().getSoundHelper().playSound(player.getPlayerEntity(), player.getLocation(), sound.asString(),
+                                volume.asFloat(), pitch.asFloat(), sound_category.asString());
                     }
                     else {
-                        player.getPlayerEntity().playSound(player.getLocation(),
-                                Sound.valueOf(sound.asString().toUpperCase()),
-                                volume.asFloat(), pitch.asFloat());
+                        NMSHandler.getInstance().getSoundHelper().playSound(player.getPlayerEntity(), player.getLocation(),
+                                Sound.valueOf(sound.asString().toUpperCase()), volume.asFloat(), pitch.asFloat(), sound_category.asString());
                     }
                 }
             }

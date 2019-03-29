@@ -2,47 +2,45 @@ package net.aufdemrand.denizen.events.player;
 
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
-import net.aufdemrand.denizen.nms.NMSHandler;
-import net.aufdemrand.denizen.nms.NMSVersion;
 import net.aufdemrand.denizen.objects.*;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
-// <--[event]
-// @Events
-// player right clicks entity
-// player right clicks entity in <area>
-// player right clicks entity in notable cuboid
-// player right clicks <entity>
-// player right clicks <entity> in <area>
-// player right clicks <entity> in notable cuboid
-//
-// @Regex ^on player right clicks [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
-//
-// @Switch with <item>
-//
-// @Cancellable true
-//
-// @Triggers when a player right clicks on an entity.
-//
-// @Context
-// <context.entity> returns the dEntity the player is clicking on.
-// <context.item> returns the dItem the player is clicking with.
-// <context.cuboids> NOTE: DEPRECATED IN FAVOR OF <context.entity.location.cuboids>
-// <context.location> returns a dLocation of the clicked entity. NOTE: DEPRECATED IN FAVOR OF <context.entity.location>
-//
-// -->
 
 public class PlayerRightClicksEntityScriptEvent extends BukkitScriptEvent implements Listener {
+
+    // <--[event]
+    // @Events
+    // player right clicks entity
+    // player right clicks entity in <area>
+    // player right clicks entity in notable cuboid
+    // player right clicks <entity>
+    // player right clicks <entity> in <area>
+    // player right clicks <entity> in notable cuboid
+    //
+    // @Regex ^on player right clicks [^\s]+$
+    // @Switch in <area>
+    //
+    // @Switch with <item>
+    //
+    // @Cancellable true
+    //
+    // @Triggers when a player right clicks on an entity.
+    //
+    // @Context
+    // <context.entity> returns the dEntity the player is clicking on.
+    // <context.item> returns the dItem the player is clicking with.
+    // <context.cuboids> NOTE: DEPRECATED IN FAVOR OF <context.entity.location.cuboids>
+    // <context.location> returns a dLocation of the clicked entity. NOTE: DEPRECATED IN FAVOR OF <context.entity.location>
+    //
+    // -->
 
     PlayerRightClicksEntityScriptEvent instance;
     PlayerInteractEntityEvent event;
@@ -59,10 +57,8 @@ public class PlayerRightClicksEntityScriptEvent extends BukkitScriptEvent implem
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(3, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(3))) {
             return false;
         }
         if (!runInCheck(path, event.getPlayer().getLocation())) {
@@ -72,8 +68,8 @@ public class PlayerRightClicksEntityScriptEvent extends BukkitScriptEvent implem
             return false;
         }
         // Deprecated in favor of with: format
-        if (CoreUtilities.xthArgEquals(4, lower, "with")) {
-            if (!tryItem(new dItem(event.getPlayer().getItemInHand()), CoreUtilities.getXthArg(5, lower))) {
+        if (path.eventArgLowerAt(4).equals("with")) {
+            if (!tryItem(new dItem(event.getPlayer().getItemInHand()), path.eventArgLowerAt(5))) {
                 return false;
             }
         }
@@ -83,16 +79,6 @@ public class PlayerRightClicksEntityScriptEvent extends BukkitScriptEvent implem
     @Override
     public String getName() {
         return "PlayerRightClicksEntity";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerInteractEntityEvent.getHandlerList().unregister(this);
     }
 
 
@@ -131,17 +117,15 @@ public class PlayerRightClicksEntityScriptEvent extends BukkitScriptEvent implem
 
     @EventHandler
     public void playerRightClicksEntity(PlayerInteractEntityEvent event) {
-        if (NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2) && event.getHand() == EquipmentSlot.OFF_HAND) {
+        if (event.getHand() == EquipmentSlot.OFF_HAND) {
             return;
         }
         entity = new dEntity(event.getRightClicked());
         item = new dItem(event.getPlayer().getItemInHand());
         location = new dLocation(event.getRightClicked().getLocation());
         cuboids = null;
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 
 }

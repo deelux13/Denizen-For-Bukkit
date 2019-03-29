@@ -14,10 +14,11 @@ public class PlayerSteersEntityScriptEvent extends BukkitScriptEvent {
 
     // <--[event]
     // @Events
-    // player steers entity (in <area>)
-    // player steers <entity> (in <area>)
+    // player steers entity
+    // player steers <entity>
     //
-    // @Regex ^on player steers [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player steers [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -52,9 +53,7 @@ public class PlayerSteersEntityScriptEvent extends BukkitScriptEvent {
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String entityName = CoreUtilities.getXthArg(2, lower);
+        String entityName = path.eventArgLowerAt(2);
         if (!tryEntity(entity, entityName)) {
             return false;
         }

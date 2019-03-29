@@ -5,12 +5,10 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -19,9 +17,10 @@ public class PlayerWalkScriptEvent extends BukkitScriptEvent implements Listener
 
     // <--[event]
     // @Events
-    // player walks (in <area>)
+    // player walks
     //
-    // @Regex ^on player walks( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player walks$
+    // @Switch in <area>
     //
     // @Warning This event fires very very rapidly!
     //
@@ -53,24 +52,12 @@ public class PlayerWalkScriptEvent extends BukkitScriptEvent implements Listener
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
         return runInCheck(path, old_location) || runInCheck(path, new_location);
     }
 
     @Override
     public String getName() {
         return "PlayerWalks";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerMoveEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -101,9 +88,7 @@ public class PlayerWalkScriptEvent extends BukkitScriptEvent implements Listener
         }
         old_location = new dLocation(event.getFrom());
         new_location = new dLocation(event.getTo());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

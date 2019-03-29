@@ -6,7 +6,6 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dInventory;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dList;
@@ -14,7 +13,6 @@ import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -32,14 +30,15 @@ public class EntityDeathScriptEvent extends BukkitScriptEvent implements Listene
 
     // <--[event]
     // @Events
-    // entity death (in <area>)
-    // entity dies (in <area>)
-    // <entity> dies (in <area>)
-    // <entity> death (in <area>)
+    // entity death
+    // entity dies
+    // <entity> dies
+    // <entity> death
     //
     // @Cancellable true
     //
-    // @Regex ^on [^\s]+ (death|dies)( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ (death|dies)$
+    // @Switch in <area>
     //
     // @Triggers when an entity dies.
     //
@@ -94,9 +93,7 @@ public class EntityDeathScriptEvent extends BukkitScriptEvent implements Listene
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String target = CoreUtilities.getXthArg(0, lower);
+        String target = path.eventArgLowerAt(0);
 
         if (!tryEntity(entity, target)) {
             return false;
@@ -112,16 +109,6 @@ public class EntityDeathScriptEvent extends BukkitScriptEvent implements Listene
     @Override
     public String getName() {
         return "EntityDies";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityDeathEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -162,7 +149,7 @@ public class EntityDeathScriptEvent extends BukkitScriptEvent implements Listene
             drops.clear();
             dropItems = new ArrayList<dItem>();
             dList drops_list = dList.valueOf(determination);
-            drops_list.filter(dItem.class);
+            drops_list.filter(dItem.class, container);
             for (String drop : drops_list) {
                 dItem item = dItem.valueOf(drop, container);
                 if (item != null) {

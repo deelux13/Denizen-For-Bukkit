@@ -6,7 +6,6 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dNPC;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dList;
@@ -37,7 +36,7 @@ public class EquipCommand extends AbstractCommand {
             if (!scriptEntry.hasObject("entities")
                     && arg.matchesArgumentList(dEntity.class)) {
 
-                scriptEntry.addObject("entities", arg.asType(dList.class).filter(dEntity.class));
+                scriptEntry.addObject("entities", arg.asType(dList.class).filter(dEntity.class, scriptEntry));
             }
             else if (arg.matchesArgumentType(dItem.class)
                     && arg.matchesPrefix("head", "helmet")) {
@@ -97,7 +96,7 @@ public class EquipCommand extends AbstractCommand {
     @SuppressWarnings("unchecked")
     @Override
     public void execute(ScriptEntry scriptEntry)
-            throws CommandExecutionException {
+            {
 
         Map<String, dItem> equipment = (Map<String, dItem>) scriptEntry.getObject("equipment");
         List<dEntity> entities = (List<dEntity>) scriptEntry.getObject("entities");

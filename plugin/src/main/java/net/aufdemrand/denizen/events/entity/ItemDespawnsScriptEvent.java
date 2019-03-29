@@ -4,11 +4,9 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ItemDespawnEvent;
@@ -18,11 +16,12 @@ public class ItemDespawnsScriptEvent extends BukkitScriptEvent implements Listen
     // TODO: de-colide with entity despawns
     // <--[event]
     // @Events
-    // item despawns (in <area>)
-    // <item> despawns (in <area>)
-    // <material> despawns (in <area>)
+    // item despawns
+    // <item> despawns
+    // <material> despawns
     //
-    // @Regex ^on [^\s]+ despawns( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ despawns$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -54,9 +53,7 @@ public class ItemDespawnsScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String item_test = CoreUtilities.getXthArg(0, lower);
+        String item_test = CoreUtilities.getXthArg(0, path.eventLower);
 
         if (!tryItem(item, item_test)) {
             return false;
@@ -72,16 +69,6 @@ public class ItemDespawnsScriptEvent extends BukkitScriptEvent implements Listen
     @Override
     public String getName() {
         return "ItemDespawns";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        ItemDespawnEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -108,9 +95,7 @@ public class ItemDespawnsScriptEvent extends BukkitScriptEvent implements Listen
         location = new dLocation(event.getLocation());
         item = new dItem(event.getEntity().getItemStack());
         entity = new dEntity(event.getEntity());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

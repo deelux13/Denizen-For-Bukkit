@@ -4,7 +4,6 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -13,7 +12,6 @@ import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,10 +21,11 @@ public class EntityExplodesScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // entity explodes (in <area>)
-    // <entity> explodes (in <area>)
+    // entity explodes
+    // <entity> explodes
     //
-    // @Regex ^on [^\s]+ explodes( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ explodes$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -63,9 +62,7 @@ public class EntityExplodesScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String target = CoreUtilities.getXthArg(0, lower);
+        String target = path.eventArgLowerAt(0);
 
         if (!tryEntity(entity, target)) {
             return false;
@@ -81,16 +78,6 @@ public class EntityExplodesScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "EntityExplodes";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityExplodeEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -149,10 +136,8 @@ public class EntityExplodesScriptEvent extends BukkitScriptEvent implements List
         for (Block block : event.blockList()) {
             blocks.add(new dLocation(block.getLocation()).identify());
         }
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         if (blockSet) {
             event.blockList().clear();
             if (blocks.size() > 0) {

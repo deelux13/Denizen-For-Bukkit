@@ -3,11 +3,9 @@ package net.aufdemrand.denizen.events.world;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.LeavesDecayEvent;
@@ -16,10 +14,11 @@ public class LeafDecaysScriptEvent extends BukkitScriptEvent implements Listener
 
     // <--[event]
     // @Events
-    // leaves decay (in <area>)
-    // <block> decay (in <area>)
+    // leaves decay
+    // <block> decay
     //
-    // @Regex ^on [^\s]+ decay( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ decay$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -48,9 +47,7 @@ public class LeafDecaysScriptEvent extends BukkitScriptEvent implements Listener
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String mat = CoreUtilities.getXthArg(0, lower);
+        String mat = path.eventArgLowerAt(0);
         return (mat.equals("leaves") || (tryMaterial(material, mat)))
                 && runInCheck(path, location);
     }
@@ -58,16 +55,6 @@ public class LeafDecaysScriptEvent extends BukkitScriptEvent implements Listener
     @Override
     public String getName() {
         return "LeafDecays";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        LeavesDecayEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -89,10 +76,8 @@ public class LeafDecaysScriptEvent extends BukkitScriptEvent implements Listener
     @EventHandler
     public void onLeafDecays(LeavesDecayEvent event) {
         location = new dLocation(event.getBlock().getLocation());
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
-        cancelled = event.isCancelled();
+        material = new dMaterial(event.getBlock());
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

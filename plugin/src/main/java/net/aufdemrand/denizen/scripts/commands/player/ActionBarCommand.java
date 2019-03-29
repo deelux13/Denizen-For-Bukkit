@@ -5,7 +5,6 @@ import net.aufdemrand.denizen.nms.NMSHandler;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.scripts.containers.core.FormatScriptContainer;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -35,7 +34,7 @@ public class ActionBarCommand extends AbstractCommand {
             }
             if (arg.matchesPrefix("targets", "target")
                     && arg.matchesArgumentList(dPlayer.class)) {
-                scriptEntry.addObject("targets", arg.asType(dList.class).filter(dPlayer.class));
+                scriptEntry.addObject("targets", arg.asType(dList.class).filter(dPlayer.class, scriptEntry));
             }
             else if (!scriptEntry.hasObject("text")) {
                 scriptEntry.addObject("text", new Element(TagManager.cleanOutputFully(arg.raw_value)));
@@ -63,7 +62,7 @@ public class ActionBarCommand extends AbstractCommand {
     }
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         Element text = scriptEntry.getElement("text");
         FormatScriptContainer format = (FormatScriptContainer) scriptEntry.getObject("format");

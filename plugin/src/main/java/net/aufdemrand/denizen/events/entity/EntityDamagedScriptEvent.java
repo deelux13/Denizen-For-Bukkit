@@ -4,14 +4,12 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -29,18 +27,19 @@ public class EntityDamagedScriptEvent extends BukkitScriptEvent implements Liste
 
     // <--[event]
     // @Events
-    // entity damaged (by <cause>) (in <area>)
-    // <entity> damaged (by <cause>) (in <area>)
-    // entity damages entity (in <area>)
-    // entity damages <entity> (in <area>)
-    // entity damaged by entity (in <area>)
-    // entity damaged by <entity> (in <area>)
-    // <entity> damages entity (in <area>)
-    // <entity> damaged by entity (in <area>)
-    // <entity> damaged by <entity> (in <area>)
-    // <entity> damages <entity> (in <area>)
+    // entity damaged (by <cause>)
+    // <entity> damaged (by <cause>)
+    // entity damages entity
+    // entity damages <entity>
+    // entity damaged by entity
+    // entity damaged by <entity>
+    // <entity> damages entity
+    // <entity> damaged by entity
+    // <entity> damaged by <entity>
+    // <entity> damages <entity>
     //
-    // @Regex ^on [^\s]+ ((damages [^\s]+)|damaged( by [^\s]+)?)( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ ((damages [^\s]+)|damaged( by [^\s]+)?)$
+    // @Switch in <area>
     //
     // @Switch with <item>
     //
@@ -90,12 +89,10 @@ public class EntityDamagedScriptEvent extends BukkitScriptEvent implements Liste
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String cmd = CoreUtilities.getXthArg(1, lower);
-        String attacker = cmd.equals("damages") ? CoreUtilities.getXthArg(0, lower) :
-                CoreUtilities.getXthArg(2, lower).equals("by") ? CoreUtilities.getXthArg(3, lower) : "";
-        String target = cmd.equals("damages") ? CoreUtilities.getXthArg(2, lower) : CoreUtilities.getXthArg(0, lower);
+        String cmd = path.eventArgLowerAt(1);
+        String attacker = cmd.equals("damages") ? path.eventArgLowerAt(0) :
+                path.eventArgLowerAt(2).equals("by") ? path.eventArgLowerAt(3) : "";
+        String target = cmd.equals("damages") ? path.eventArgLowerAt(2) : path.eventArgLowerAt(0);
 
         if (!attacker.isEmpty()) {
             if (damager != null) {
@@ -128,16 +125,6 @@ public class EntityDamagedScriptEvent extends BukkitScriptEvent implements Liste
     @Override
     public String getName() {
         return "EntityDamaged";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityDamageEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -209,10 +196,8 @@ public class EntityDamagedScriptEvent extends BukkitScriptEvent implements Liste
                 }
             }
         }
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setDamage(damage.asDouble());
     }
 }

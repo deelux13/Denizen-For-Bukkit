@@ -5,17 +5,13 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.objects.dWorld;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
-
-import java.util.List;
 
 public class PlayerChangesWorldScriptEvent extends BukkitScriptEvent implements Listener {
 
@@ -23,7 +19,8 @@ public class PlayerChangesWorldScriptEvent extends BukkitScriptEvent implements 
     // @Events
     // player changes world (from <world>) (to <world>)
     //
-    // @Regex ^on player world( from [^\s]+)?( to [^\s]+)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player world( from [^\s]+)?( to [^\s]+)?$
+    // @Switch in <area>
     //
     // @Triggers when a player moves to a different world.
     //
@@ -49,18 +46,16 @@ public class PlayerChangesWorldScriptEvent extends BukkitScriptEvent implements 
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        List<String> data = CoreUtilities.split(lower, ' ');
-        for (int index = 3; index < data.size(); index++) {
-            if (data.get(index).equals("from")) {
-                if (!data.get(index + 1).equals(CoreUtilities.toLowerCase(origin_world.getName()))) {
+        String[] data = path.eventArgsLower;
+        for (int index = 3; index < data.length; index++) {
+            if (data[index].equals("from")) {
+                if (!data[index + 1].equals(CoreUtilities.toLowerCase(origin_world.getName()))) {
                     return false;
                 }
             }
-            else if (data.get(index).equals("to")) {
-                if (!data.get(index + 1).equals(CoreUtilities.toLowerCase(destination_world.getName()))) {
+            else if (data[index].equals("to")) {
+                if (!data[index + 1].equals(CoreUtilities.toLowerCase(destination_world.getName()))) {
                     return false;
                 }
             }
@@ -72,16 +67,6 @@ public class PlayerChangesWorldScriptEvent extends BukkitScriptEvent implements 
     @Override
     public String getName() {
         return "PlayerChangesWorld";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerChangedWorldEvent.getHandlerList().unregister(this);
     }
 
     @Override

@@ -5,7 +5,6 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.objects.dTrade;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -29,7 +28,7 @@ public class OpenTradesCommand extends AbstractCommand {
             if (!scriptEntry.hasObject("trades")
                     && !scriptEntry.hasObject("entity")
                     && arg.matchesArgumentList(dTrade.class)) {
-                scriptEntry.addObject("trades", arg.asType(dList.class).filter(dTrade.class));
+                scriptEntry.addObject("trades", arg.asType(dList.class).filter(dTrade.class, scriptEntry));
             }
             else if (!scriptEntry.hasObject("trades")
                     && !scriptEntry.hasObject("entity")
@@ -41,7 +40,7 @@ public class OpenTradesCommand extends AbstractCommand {
             }
             else if (arg.matchesPrefix("players")
                     && arg.matchesArgumentList(dPlayer.class)) {
-                scriptEntry.addObject("players", arg.asType(dList.class).filter(dPlayer.class));
+                scriptEntry.addObject("players", arg.asType(dList.class).filter(dPlayer.class, scriptEntry));
             }
             else {
                 arg.reportUnhandled();
@@ -58,7 +57,7 @@ public class OpenTradesCommand extends AbstractCommand {
 
     }
 
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         String title = scriptEntry.getElement("title").asString();
         dEntity entity = scriptEntry.getdObject("entity");

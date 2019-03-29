@@ -5,7 +5,6 @@ import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.command.messaging.Messaging;
-import net.aufdemrand.denizen.utilities.depends.Depends;
 import net.aufdemrand.denizencore.scripts.ScriptRegistry;
 import net.citizensnpcs.Citizens;
 import net.citizensnpcs.api.command.Command;
@@ -14,7 +13,6 @@ import net.citizensnpcs.api.command.Requirements;
 import net.citizensnpcs.api.command.exception.CommandException;
 import net.citizensnpcs.api.npc.NPC;
 import net.citizensnpcs.trait.Anchors;
-import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -589,10 +587,45 @@ public class NPCCommandHandler {
         SneakingTrait trait = npc.getTrait(SneakingTrait.class);
 
         if (trait.isSneaking()) {
+            trait.stand();
             Messaging.sendError(sender, npc.getName() + " is already sneaking!");
         }
         else {
             trait.sneak();
+            Messaging.send(sender, npc.getName() + " is now sneaking.");
+        }
+
+    }
+
+    /*
+     * Mirror
+     */
+    @Command(
+            aliases = {"npc"}, usage = "mirror",
+            desc = "Makes the NPC mirror the skin of the player looking at it.", flags = "", modifiers = {"mirror"},
+            min = 1, max = 3, permission = "denizen.npc.mirror")
+    @Requirements(selected = true, ownership = true)
+    public void mirror(CommandContext args, CommandSender sender, NPC npc) throws CommandException {
+        if (npc.getEntity().getType() != EntityType.PLAYER) {
+            Messaging.sendError(sender, npc.getName() + " needs to be a Player type NPC to be a mirror!");
+            return;
+        }
+
+        if (!npc.hasTrait(MirrorTrait.class)) {
+            npc.addTrait(MirrorTrait.class);
+            npc.getTrait(MirrorTrait.class).enableMirror();
+            Messaging.send(sender, npc.getName() + " is now mirroring player skins.");
+            return;
+        }
+        MirrorTrait trait = npc.getTrait(MirrorTrait.class);
+
+        if (trait.mirror) {
+            trait.disableMirror();
+            Messaging.send(sender, npc.getName() + " is no longer mirroring player skins.");
+        }
+        else {
+            trait.enableMirror();
+            Messaging.send(sender, npc.getName() + " is now mirroring player skins.");
         }
 
     }
@@ -662,36 +695,6 @@ public class NPCCommandHandler {
 
         if (showMore) {
             Messaging.sendInfo(sender, npc.getName() + "'s health is '" + trait.getHealth() + "/" + trait.getMaxhealth() + "'.");
-        }
-    }
-
-    /*
-     * Chatbot
-     */
-    @Command(
-            aliases = {"npc"}, usage = "chatbot",
-            desc = "Turns the NPC into a chatbot.", flags = "", modifiers = {"chatbot", "bot"},
-            min = 1, max = 2, permission = "denizen.npc.chatbot")
-    @Requirements(selected = true, ownership = true)
-    public void chatbot(CommandContext args, CommandSender sender, NPC npc) throws CommandException {
-
-        if (!Depends.hasProgramAB) {
-            Messaging.sendError(sender, "The Chatbot Trait " +
-                    " cannot be used if Program AB is missing from Denizen/lib");
-            return;
-        }
-
-        if (!npc.hasTrait(ChatbotTrait.class)) {
-            npc.addTrait(ChatbotTrait.class);
-            Messaging.send(sender, ChatColor.BLUE + npc.getName() +
-                    " has become a chatbot!");
-        }
-        ChatbotTrait trait = npc.getTrait(ChatbotTrait.class);
-
-        if (args.argsLength() > 1) {
-            trait.setBot(args.getString(1));
-            Messaging.send(sender, ChatColor.BLUE + npc.getName() +
-                    " is now the chatbot " + args.getString(1));
         }
     }
 }

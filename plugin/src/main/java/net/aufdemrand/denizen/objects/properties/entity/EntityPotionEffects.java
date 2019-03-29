@@ -1,8 +1,7 @@
 package net.aufdemrand.denizen.objects.properties.entity;
 
-import net.aufdemrand.denizen.nms.NMSHandler;
-import net.aufdemrand.denizen.nms.NMSVersion;
 import net.aufdemrand.denizen.objects.dEntity;
+import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.Mechanism;
 import net.aufdemrand.denizencore.objects.dList;
@@ -23,8 +22,7 @@ public class EntityPotionEffects implements Property {
     public static boolean describes(dObject object) {
         return object instanceof dEntity &&
                 (((dEntity) object).isLivingEntity()
-                        || ((NMSHandler.getVersion().isAtLeast(NMSVersion.v1_9_R2)
-                        && ((dEntity) object).getBukkitEntityType() == EntityType.TIPPED_ARROW)));
+                        || ((dEntity) object).getBukkitEntityType() == EntityType.TIPPED_ARROW);
     }
 
     public static EntityPotionEffects getFrom(dObject object) {
@@ -159,7 +157,7 @@ public class EntityPotionEffects implements Property {
                 }
                 PotionEffectType effectType = PotionEffectType.getByName(split.get(0));
                 if (effectType == null) {
-                    // Maybe error message?
+                    dB.echoError("Cannot apply potion effect '" + split.get(0) + "': unknown effect type.");
                     continue;
                 }
                 try {
@@ -173,7 +171,7 @@ public class EntityPotionEffects implements Property {
                     }
                 }
                 catch (NumberFormatException ex) {
-                    // Maybe error message?
+                    dB.echoError("Cannot apply potion effect '" + effect + "': invalid amplifier or duration number.");
                     continue;
                 }
             }

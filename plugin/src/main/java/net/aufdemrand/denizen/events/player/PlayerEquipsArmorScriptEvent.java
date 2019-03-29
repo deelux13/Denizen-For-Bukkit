@@ -19,7 +19,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -65,15 +64,13 @@ public class PlayerEquipsArmorScriptEvent extends BukkitScriptEvent implements L
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String type = CoreUtilities.getXthArg(1, lower);
+        String type = path.eventArgLowerAt(1);
 
         if (!type.equals(CoreUtilities.toLowerCase(equipType.asString()))) {
             return false;
         }
 
-        String eItem = CoreUtilities.getXthArg(2, lower);
+        String eItem = path.eventArgLowerAt(2);
 
         if (!eItem.equals("armor") && !eItem.equals(CoreUtilities.toLowerCase(armorType.asString()))
                 && !tryItem(armor, eItem)) {
@@ -86,16 +83,6 @@ public class PlayerEquipsArmorScriptEvent extends BukkitScriptEvent implements L
     @Override
     public String getName() {
         return "PlayerEquipsArmor";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        HandlerList.unregisterAll(this);
     }
 
     @Override

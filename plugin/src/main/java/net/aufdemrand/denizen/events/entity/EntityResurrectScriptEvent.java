@@ -3,12 +3,10 @@ package net.aufdemrand.denizen.events.entity;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityResurrectEvent;
@@ -17,10 +15,11 @@ public class EntityResurrectScriptEvent extends BukkitScriptEvent implements Lis
 
     // <--[event]
     // @Events
-    // entity resurrected (in <area>)
-    // <entity> resurrected (in <area>)
+    // entity resurrected
+    // <entity> resurrected
     //
-    // @Regex ^on [^\s]+ resurrected( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ resurrected$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -49,10 +48,8 @@ public class EntityResurrectScriptEvent extends BukkitScriptEvent implements Lis
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(0, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(0))) {
             return false;
         }
 
@@ -66,16 +63,6 @@ public class EntityResurrectScriptEvent extends BukkitScriptEvent implements Lis
     @Override
     public String getName() {
         return "EntityResurrected";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityResurrectEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -100,9 +87,7 @@ public class EntityResurrectScriptEvent extends BukkitScriptEvent implements Lis
     @EventHandler
     public void onEntityResurrect(EntityResurrectEvent event) {
         entity = new dEntity(event.getEntity());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

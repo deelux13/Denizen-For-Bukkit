@@ -1,21 +1,19 @@
 package net.aufdemrand.denizen.events.player;
 
 import net.aufdemrand.denizen.BukkitScriptEntryData;
+import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dInventory;
 import net.aufdemrand.denizen.objects.notable.NotableManager;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
-import net.aufdemrand.denizencore.events.ScriptEvent;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 
-public class PlayerOpensInvScriptEvent extends ScriptEvent implements Listener {
+public class PlayerOpensInvScriptEvent extends BukkitScriptEvent implements Listener {
 
     // TODO: in area
     // <--[event]
@@ -49,9 +47,7 @@ public class PlayerOpensInvScriptEvent extends ScriptEvent implements Listener {
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String inv = CoreUtilities.getXthArg(2, lower);
+        String inv = path.eventArgLowerAt(2);
         String nname = NotableManager.isSaved(inventory) ?
                 CoreUtilities.toLowerCase(NotableManager.getSavedId(inventory)) :
                 "\0";
@@ -68,16 +64,6 @@ public class PlayerOpensInvScriptEvent extends ScriptEvent implements Listener {
     @Override
     public String getName() {
         return "PlayerOpensInv";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        InventoryOpenEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -106,8 +92,6 @@ public class PlayerOpensInvScriptEvent extends ScriptEvent implements Listener {
         }
         inventory = dInventory.mirrorBukkitInventory(event.getInventory());
         this.event = event;
-        cancelled = event.isCancelled();
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

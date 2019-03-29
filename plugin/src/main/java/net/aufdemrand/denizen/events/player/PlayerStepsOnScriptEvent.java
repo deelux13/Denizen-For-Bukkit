@@ -3,13 +3,11 @@ package net.aufdemrand.denizen.events.player;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.*;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dList;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -19,10 +17,11 @@ public class PlayerStepsOnScriptEvent extends BukkitScriptEvent implements Liste
 
     // <--[event]
     // @Events
-    // player steps on block (in <area>)
-    // player steps on <material> (in <area>)
+    // player steps on block
+    // player steps on <material>
     //
-    // @Regex ^on player steps on [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player steps on [^\s]+$
+    // @Switch in <area>
     //
     // @Warning This event may fire very rapidly.
     //
@@ -56,11 +55,9 @@ public class PlayerStepsOnScriptEvent extends BukkitScriptEvent implements Liste
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        String mat = CoreUtilities.getXthArg(3, lower);
-        dMaterial material = dMaterial.getMaterialFrom(location.getBlock().getType(), location.getBlock().getData());
+        String mat = path.eventArgLowerAt(3);
+        dMaterial material = new dMaterial(location.getBlock());
         if (!tryMaterial(material, mat)) {
             return false;
         }
@@ -75,16 +72,6 @@ public class PlayerStepsOnScriptEvent extends BukkitScriptEvent implements Liste
     @Override
     public String getName() {
         return "PlayerStepsOn";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerMoveEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -132,10 +119,8 @@ public class PlayerStepsOnScriptEvent extends BukkitScriptEvent implements Liste
         previous_location = new dLocation(event.getFrom());
         new_location = new dLocation(event.getTo());
         cuboids = null;
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 
     @EventHandler

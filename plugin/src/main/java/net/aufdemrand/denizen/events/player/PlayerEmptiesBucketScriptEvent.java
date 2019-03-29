@@ -6,12 +6,10 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
@@ -20,10 +18,11 @@ public class PlayerEmptiesBucketScriptEvent extends BukkitScriptEvent implements
 
     // <--[event]
     // @Events
-    // player empties bucket (in <area>)
-    // player empties <bucket> (in <area>)
+    // player empties bucket
+    // player empties <bucket>
     //
-    // @Regex ^on player empties [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player empties [^\s]+$
+    // @Switch in <area>
     //
     // @Triggers when a player empties a bucket.
     //
@@ -59,9 +58,7 @@ public class PlayerEmptiesBucketScriptEvent extends BukkitScriptEvent implements
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String iTest = CoreUtilities.getXthArg(2, lower);
+        String iTest = path.eventArgLowerAt(2);
         return (iTest.equals("bucket") || tryItem(item, iTest))
                 && runInCheck(path, location);
     }
@@ -69,16 +66,6 @@ public class PlayerEmptiesBucketScriptEvent extends BukkitScriptEvent implements
     @Override
     public String getName() {
         return "PlayerEmptiesBucket";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerBucketEmptyEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -111,9 +98,7 @@ public class PlayerEmptiesBucketScriptEvent extends BukkitScriptEvent implements
         location = new dLocation(event.getBlockClicked().getLocation());
         relative = new dLocation(event.getBlockClicked().getRelative(event.getBlockFace()).getLocation());
         item = new dItem(event.getBucket());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

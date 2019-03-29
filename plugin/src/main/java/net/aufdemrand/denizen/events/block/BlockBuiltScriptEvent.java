@@ -3,11 +3,9 @@ package net.aufdemrand.denizen.events.block;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockCanBuildEvent;
@@ -16,10 +14,11 @@ public class BlockBuiltScriptEvent extends BukkitScriptEvent implements Listener
 
     // <--[event]
     // @Events
-    // block being built (on <material>) (in <area>)
-    // <material> being built (on <material>) (in <area>)
+    // block being built (on <material>)
+    // <material> being built (on <material>)
     //
-    // @Regex ^on [^\s]+ being built( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ being built$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -53,19 +52,17 @@ public class BlockBuiltScriptEvent extends BukkitScriptEvent implements Listener
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
         if (!runInCheck(path, location)) {
             return false;
         }
 
-        String mat1 = CoreUtilities.getXthArg(0, lower);
+        String mat1 = path.eventArgLowerAt(0);
         if (!tryMaterial(new_material, mat1)) {
             return false;
         }
 
-        String mat2 = CoreUtilities.getXthArg(4, lower);
+        String mat2 = path.eventArgLowerAt(4);
         if (mat2.length() > 0 && !tryMaterial(old_material, mat2)) {
             return false;
         }
@@ -75,16 +72,6 @@ public class BlockBuiltScriptEvent extends BukkitScriptEvent implements Listener
     @Override
     public String getName() {
         return "BlockBuilt";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BlockCanBuildEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -113,8 +100,8 @@ public class BlockBuiltScriptEvent extends BukkitScriptEvent implements Listener
     @EventHandler
     public void onBlockBuilt(BlockCanBuildEvent event) {
         location = new dLocation(event.getBlock().getLocation());
-        old_material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
-        new_material = dMaterial.getMaterialFrom(event.getMaterial());  // Deprecated because it doesn't have proper data
+        old_material = new dMaterial(event.getBlock());
+        new_material = new dMaterial(event.getMaterial()); // Deprecated because it doesn't have proper data
         cancelled = !event.isBuildable();
         this.event = event;
         fire();

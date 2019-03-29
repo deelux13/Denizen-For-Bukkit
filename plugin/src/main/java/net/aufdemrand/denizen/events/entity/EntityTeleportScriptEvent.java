@@ -4,13 +4,11 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,10 +19,11 @@ public class EntityTeleportScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // entity teleports (in <area>)
-    // <entity> teleports (in <area>)
+    // entity teleports
+    // <entity> teleports
     //
-    // @Regex ^on [^\s]+ teleports( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ teleports$
+    // @Switch in <area>
     //
     // @Triggers when an entity teleports.
     //
@@ -67,10 +66,8 @@ public class EntityTeleportScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(0, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(0))) {
             return false;
         }
 
@@ -84,17 +81,6 @@ public class EntityTeleportScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "EntityTeleports";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityTeleportEvent.getHandlerList().unregister(this);
-        PlayerTeleportEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -156,12 +142,10 @@ public class EntityTeleportScriptEvent extends BukkitScriptEvent implements List
         to = new dLocation(event.getTo());
         from = new dLocation(event.getFrom());
         entity = new dEntity(event.getEntity());
-        cancelled = event.isCancelled();
         cause = "ENTITY_TELEPORT";
         this.event = event;
         pEvent = null;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setFrom(from);
         event.setTo(to);
     }
@@ -174,12 +158,10 @@ public class EntityTeleportScriptEvent extends BukkitScriptEvent implements List
         from = new dLocation(event.getFrom());
         to = new dLocation(event.getTo());
         entity = new dEntity(event.getPlayer());
-        cancelled = event.isCancelled();
         cause = event.getCause().name();
         this.event = null;
         pEvent = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setFrom(from);
         event.setTo(to);
     }

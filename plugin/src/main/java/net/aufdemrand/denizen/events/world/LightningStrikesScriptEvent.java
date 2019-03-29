@@ -5,11 +5,9 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dWorld;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.weather.LightningStrikeEvent;
@@ -18,9 +16,10 @@ public class LightningStrikesScriptEvent extends BukkitScriptEvent implements Li
 
     // <--[event]
     // @Events
-    // lightning strikes (in <area>)
+    // lightning strikes
     //
-    // @Regex ^on lightning strikes( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on lightning strikes$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -58,16 +57,6 @@ public class LightningStrikesScriptEvent extends BukkitScriptEvent implements Li
     }
 
     @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        LightningStrikeEvent.getHandlerList().unregister(this);
-    }
-
-    @Override
     public boolean applyDetermination(ScriptContainer container, String determination) {
         return super.applyDetermination(container, determination);
     }
@@ -91,8 +80,6 @@ public class LightningStrikesScriptEvent extends BukkitScriptEvent implements Li
         lightning = new dEntity(event.getLightning());
         location = new dLocation(event.getLightning().getLocation());
         this.event = event;
-        cancelled = event.isCancelled();
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

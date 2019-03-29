@@ -4,12 +4,10 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
@@ -18,10 +16,11 @@ public class PlayerLeashesEntityScriptEvent extends BukkitScriptEvent implements
 
     // <--[event]
     // @Events
-    // player leashes entity (in <area>)
-    // player leashes <entity> (in <area>)
+    // player leashes entity
+    // player leashes <entity>
     //
-    // @Regex ^on player leashes [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player leashes [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -49,10 +48,8 @@ public class PlayerLeashesEntityScriptEvent extends BukkitScriptEvent implements
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(2, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(2))) {
             return false;
         }
 
@@ -66,16 +63,6 @@ public class PlayerLeashesEntityScriptEvent extends BukkitScriptEvent implements
     @Override
     public String getName() {
         return "PlayerLeashesEntity";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerLeashEntityEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -106,9 +93,7 @@ public class PlayerLeashesEntityScriptEvent extends BukkitScriptEvent implements
         }
         holder = dPlayer.mirrorBukkitPlayer(event.getPlayer());
         entity = new dEntity(event.getEntity());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

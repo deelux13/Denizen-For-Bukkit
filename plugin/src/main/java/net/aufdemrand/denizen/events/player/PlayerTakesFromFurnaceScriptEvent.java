@@ -3,13 +3,11 @@ package net.aufdemrand.denizen.events.player;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.*;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.FurnaceExtractEvent;
@@ -18,11 +16,12 @@ public class PlayerTakesFromFurnaceScriptEvent extends BukkitScriptEvent impleme
 
     // <--[event]
     // @Events
-    // player takes item from furnace (in <area>)
-    // player takes <item> from furnace (in <area>)
-    // player takes <material> from furnace (in <area>)
+    // player takes item from furnace
+    // player takes <item> from furnace
+    // player takes <material> from furnace
     //
-    // @Regex ^on player takes [^\s]+ from furnace( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player takes [^\s]+ from furnace$
+    // @Switch in <area>
     //
     // @Triggers when a player takes an item from a furnace.
     // @Context
@@ -53,9 +52,7 @@ public class PlayerTakesFromFurnaceScriptEvent extends BukkitScriptEvent impleme
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String itemTest = CoreUtilities.getXthArg(2, lower);
+        String itemTest = path.eventArgLowerAt(2);
 
         return tryItem(item, itemTest) && runInCheck(path, location);
     }
@@ -63,16 +60,6 @@ public class PlayerTakesFromFurnaceScriptEvent extends BukkitScriptEvent impleme
     @Override
     public String getName() {
         return "PlayerTakesFromFurnace";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        FurnaceExtractEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -105,7 +92,7 @@ public class PlayerTakesFromFurnaceScriptEvent extends BukkitScriptEvent impleme
         if (dEntity.isNPC(event.getPlayer())) {
             return;
         }
-        item = new dItem(dMaterial.getMaterialFrom(event.getItemType()), event.getItemAmount());
+        item = new dItem(event.getItemType(), event.getItemAmount());
         location = new dLocation(event.getBlock().getLocation());
         xp = event.getExpToDrop();
         this.event = event;

@@ -4,7 +4,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
-import net.aufdemrand.denizen.nms.Handler_v1_12_R1;
 import net.aufdemrand.denizen.nms.NMSHandler;
 import net.aufdemrand.denizen.nms.impl.ProfileEditor_v1_12_R1;
 import net.aufdemrand.denizen.nms.impl.entities.EntityFakePlayer_v1_12_R1;
@@ -17,6 +16,7 @@ import net.aufdemrand.denizen.nms.impl.packets.PacketOutWindowItems_v1_12_R1;
 import net.aufdemrand.denizen.nms.interfaces.packets.PacketHandler;
 import net.aufdemrand.denizen.nms.interfaces.packets.PacketOutSpawnEntity;
 import net.aufdemrand.denizen.nms.util.ReflectionHelper;
+import net.aufdemrand.denizencore.utilities.debugging.dB;
 import net.minecraft.server.v1_12_R1.*;
 import net.minecraft.server.v1_12_R1.Entity;
 import net.minecraft.server.v1_12_R1.PacketPlayOutPlayerInfo.EnumPlayerInfoAction;
@@ -114,7 +114,7 @@ public class DenizenNetworkManager_v1_12_R1 extends NetworkManager {
             return reter;
         }
         catch (Exception e) {
-            e.printStackTrace();
+            dB.echoError(e);
             return null;
         }
     }
@@ -134,19 +134,19 @@ public class DenizenNetworkManager_v1_12_R1 extends NetworkManager {
                     oldManager.sendPacket(packet);
                 }
                 else {
-                    if (!((Handler_v1_12_R1) NMSHandler.getInstance()).attachmentsA.containsKey(e.getUniqueID())
-                            || ((Handler_v1_12_R1) NMSHandler.getInstance()).attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
+                    if (!NMSHandler.getInstance().attachmentsA.containsKey(e.getUniqueID())
+                            || NMSHandler.getInstance().attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
                         oldManager.sendPacket(packet);
                     }
-                    UUID att = ((Handler_v1_12_R1) NMSHandler.getInstance()).attachments2.get(e.getUniqueID());
+                    UUID att = NMSHandler.getInstance().attachments2.get(e.getUniqueID());
                     if (att != null) {
                         org.bukkit.entity.Entity target = Bukkit.getEntity(att);
                         if (target != null) {
                             Packet pNew = (Packet) duplo(packet);
                             ENTITY_ID_PACKENT.setInt(pNew, target.getEntityId());
-                            Vector offset = ((Handler_v1_12_R1) NMSHandler.getInstance()).attachmentOffsets.get(att);
+                            Vector offset = NMSHandler.getInstance().attachmentOffsets.get(att);
                             if (offset != null && (packet instanceof PacketPlayOutEntity.PacketPlayOutRelEntityMove || packet instanceof PacketPlayOutEntity.PacketPlayOutRelEntityMoveLook)) {
-                                boolean rotationBasis = ((Handler_v1_12_R1) NMSHandler.getInstance()).attachmentRotations.contains(att);
+                                boolean rotationBasis = NMSHandler.getInstance().attachmentRotations.contains(att);
                                 Vector goalPosition;
                                 if (!rotationBasis) {
                                     goalPosition = new Vector(e.locX, e.locY, e.locZ).add(offset);
@@ -154,12 +154,12 @@ public class DenizenNetworkManager_v1_12_R1 extends NetworkManager {
                                 else {
                                     goalPosition = new Vector(e.locX, e.locY, e.locZ).add(NMSHandler.fixOffset(offset, -e.yaw, e.pitch));
                                 }
-                                Vector oldPos = ((Handler_v1_12_R1) NMSHandler.getInstance()).visiblePositions.get(target.getUniqueId());
+                                Vector oldPos = NMSHandler.getInstance().visiblePositions.get(target.getUniqueId());
                                 if (oldPos == null) {
                                     oldPos = target.getLocation().toVector();
                                 }
                                 Vector moveNeeded = goalPosition.clone().subtract(oldPos);
-                                ((Handler_v1_12_R1) NMSHandler.getInstance()).visiblePositions.put(target.getUniqueId(), goalPosition.clone());
+                                NMSHandler.getInstance().visiblePositions.put(target.getUniqueId(), goalPosition.clone());
                                 int offX = (int) (moveNeeded.getX() * (32 * 128));
                                 int offY = (int) (moveNeeded.getY() * (32 * 128));
                                 int offZ = (int) (moveNeeded.getZ() * (32 * 128));
@@ -184,7 +184,7 @@ public class DenizenNetworkManager_v1_12_R1 extends NetworkManager {
                 }
             }
             catch (Exception e) {
-                e.printStackTrace();
+                dB.echoError(e);
             }
         }
         else if (packet instanceof PacketPlayOutEntityVelocity) {
@@ -195,11 +195,11 @@ public class DenizenNetworkManager_v1_12_R1 extends NetworkManager {
                     oldManager.sendPacket(packet);
                 }
                 else {
-                    if (!((Handler_v1_12_R1) NMSHandler.getInstance()).attachmentsA.containsKey(e.getUniqueID())
-                            || ((Handler_v1_12_R1) NMSHandler.getInstance()).attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
+                    if (!NMSHandler.getInstance().attachmentsA.containsKey(e.getUniqueID())
+                            || NMSHandler.getInstance().attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
                         oldManager.sendPacket(packet);
                     }
-                    UUID att = ((Handler_v1_12_R1) NMSHandler.getInstance()).attachments2.get(e.getUniqueID());
+                    UUID att = NMSHandler.getInstance().attachments2.get(e.getUniqueID());
                     if (att != null) {
                         org.bukkit.entity.Entity target = Bukkit.getEntity(att);
                         if (target != null) {
@@ -211,7 +211,7 @@ public class DenizenNetworkManager_v1_12_R1 extends NetworkManager {
                 }
             }
             catch (Exception e) {
-                e.printStackTrace();
+                dB.echoError(e);
             }
         }
         else if (packet instanceof PacketPlayOutEntityTeleport) {
@@ -222,20 +222,20 @@ public class DenizenNetworkManager_v1_12_R1 extends NetworkManager {
                     oldManager.sendPacket(packet);
                 }
                 else {
-                    if (!((Handler_v1_12_R1) NMSHandler.getInstance()).attachmentsA.containsKey(e.getUniqueID())
-                            || ((Handler_v1_12_R1) NMSHandler.getInstance()).attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
+                    if (!NMSHandler.getInstance().attachmentsA.containsKey(e.getUniqueID())
+                            || NMSHandler.getInstance().attachmentsA.get(e.getUniqueID()).equals(player.getUniqueID())) {
                         oldManager.sendPacket(packet);
                     }
-                    UUID att = ((Handler_v1_12_R1) NMSHandler.getInstance()).attachments2.get(e.getUniqueID());
+                    UUID att = NMSHandler.getInstance().attachments2.get(e.getUniqueID());
                     if (att != null) {
                         org.bukkit.entity.Entity target = Bukkit.getEntity(att);
                         if (target != null) {
                             Packet pNew = (Packet) duplo(packet);
                             ENTITY_ID_PACKTELENT.setInt(pNew, target.getEntityId());
-                            Vector offset = ((Handler_v1_12_R1) NMSHandler.getInstance()).attachmentOffsets.get(att);
+                            Vector offset = NMSHandler.getInstance().attachmentOffsets.get(att);
                             Vector resultPos = new Vector(POS_X_PACKTELENT.getDouble(pNew), POS_Y_PACKTELENT.getDouble(pNew), POS_Z_PACKTELENT.getDouble(pNew));
                             if (offset != null) {
-                                boolean rotationBasis = ((Handler_v1_12_R1) NMSHandler.getInstance()).attachmentRotations.contains(att);
+                                boolean rotationBasis = NMSHandler.getInstance().attachmentRotations.contains(att);
                                 Vector goalOffset;
                                 if (!rotationBasis) {
                                     goalOffset = offset;
@@ -248,14 +248,14 @@ public class DenizenNetworkManager_v1_12_R1 extends NetworkManager {
                                 POS_Z_PACKTELENT.setDouble(pNew, POS_Z_PACKTELENT.getDouble(pNew) + goalOffset.getZ());
                                 resultPos.add(goalOffset);
                             }
-                            ((Handler_v1_12_R1) NMSHandler.getInstance()).visiblePositions.put(target.getUniqueId(), resultPos);
+                            NMSHandler.getInstance().visiblePositions.put(target.getUniqueId(), resultPos);
                             oldManager.sendPacket(pNew);
                         }
                     }
                 }
             }
             catch (Exception e) {
-                e.printStackTrace();
+                dB.echoError(e);
             }
         }
         else if (packet instanceof PacketPlayOutNamedEntitySpawn
@@ -408,7 +408,7 @@ public class DenizenNetworkManager_v1_12_R1 extends NetworkManager {
             managerField.setAccessible(true);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            dB.echoError(e);
         }
         protocolDirectionField = directionField;
         networkManagerField = managerField;
@@ -420,7 +420,7 @@ public class DenizenNetworkManager_v1_12_R1 extends NetworkManager {
             direction = (EnumProtocolDirection) protocolDirectionField.get(networkManager);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            dB.echoError(e);
         }
         return direction;
     }
@@ -430,7 +430,7 @@ public class DenizenNetworkManager_v1_12_R1 extends NetworkManager {
             networkManagerField.set(playerConnection, networkManager);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            dB.echoError(e);
         }
     }
 }

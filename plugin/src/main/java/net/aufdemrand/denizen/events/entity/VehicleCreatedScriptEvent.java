@@ -2,11 +2,9 @@ package net.aufdemrand.denizen.events.entity;
 
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,10 +14,11 @@ public class VehicleCreatedScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // vehicle created (in <area>)
-    // <vehicle> created (in <area>)
+    // vehicle created
+    // <vehicle> created
     //
-    // @Regex ^on [^\s]+ created( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ created$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -46,10 +45,8 @@ public class VehicleCreatedScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(vehicle, CoreUtilities.getXthArg(0, lower))) {
+        if (!tryEntity(vehicle, path.eventArgLowerAt(0))) {
             return false;
         }
 
@@ -68,16 +65,6 @@ public class VehicleCreatedScriptEvent extends BukkitScriptEvent implements List
     }
 
     @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        VehicleCreateEvent.getHandlerList().unregister(this);
-    }
-
-    @Override
     public boolean applyDetermination(ScriptContainer container, String determination) {
         return super.applyDetermination(container, determination);
     }
@@ -93,12 +80,10 @@ public class VehicleCreatedScriptEvent extends BukkitScriptEvent implements List
     @EventHandler
     public void onVehicleCreated(VehicleCreateEvent event) {
         Entity entity = event.getVehicle();
-        cancelled = event.isCancelled();
         dEntity.rememberEntity(entity);
         vehicle = new dEntity(entity);
         this.event = event;
-        fire();
+        fire(event);
         dEntity.forgetEntity(entity);
-        event.setCancelled(cancelled);
     }
 }

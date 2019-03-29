@@ -2,13 +2,11 @@ package net.aufdemrand.denizen.events.entity;
 
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
@@ -17,10 +15,11 @@ public class EntityExplosionPrimesScriptEvent extends BukkitScriptEvent implemen
 
     // <--[event]
     // @Events
-    // entity explosion primes (in <area>)
-    // <entity> explosion primes (in <area>)
+    // entity explosion primes
+    // <entity> explosion primes
     //
-    // @Regex ^on [^\s]+ explosion primes( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ explosion primes$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -49,10 +48,8 @@ public class EntityExplosionPrimesScriptEvent extends BukkitScriptEvent implemen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(0, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(0))) {
             return false;
         }
 
@@ -67,16 +64,6 @@ public class EntityExplosionPrimesScriptEvent extends BukkitScriptEvent implemen
     @Override
     public String getName() {
         return "EntityExplosionPrimes";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        ExplosionPrimeEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -112,10 +99,8 @@ public class EntityExplosionPrimesScriptEvent extends BukkitScriptEvent implemen
         entity = new dEntity(event.getEntity());
         radius = event.getRadius();
         fire = event.getFire();
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setFire(fire);
         event.setRadius(radius);
     }

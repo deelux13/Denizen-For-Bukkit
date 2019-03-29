@@ -1,5 +1,6 @@
-# Whether debug information about Denizen should appear in the
-# server console
+# Denizen config.
+
+# Whether debug information about Denizen should appear in the server console
 Debug:
   Show: true
   Ex command help: true
@@ -13,7 +14,7 @@ Debug:
   # This is purely to maintain basic information on things like how many servers run any given version of Denizen.
   # Please do not disable this unless it is throwing errors (Please report any errors you receive as well).
   Stats: true
-  # Whether to force the help command to be the default bukkit help.
+  # Whether to force the help command to be the default bukkit help (required to fix issues with command script help options).
   Override help: true
 
 Scripts:
@@ -129,16 +130,8 @@ Commands:
         # Whether to allow scripts to read arbitrary data from the web, which can also potentially enable tracking of your private server data.
         # Generally this is safe, but set to 'false' if you want very strict security.
         Allow: true
-  General:
-        # NEVER EVER ENABLE ANY OF THESE.
-        # THEY WILL BORK YOUR SERVER.
-        # ESPECIALLY NOT IF YOU'RE NOT A JAVA DEVELOPER!!!
-        Allow stupid file abuse you moron dont enable this: false
-        are you sure: false
-        are you absolutely seriously sure dont enable this: false
-        This one dont touch: false
     # GENERAL SECURITY NOTE: Always run your server on a user with access to nothing but the minecraft folder
-    # Otherwise, a bad script or plugin could potentially damage things
+    # Otherwise, a bad script or plugin could potentially damage things (though being careful with these settings should reduce the risk of a script doing so)
     # ALSO: Always read scripts you download for anything suspicious looking, EG the log command, the file_delete mechanism, ...
 
 Tags:
@@ -146,6 +139,8 @@ Tags:
   Timeout: 10
   # Whether the tag system should still timeout when debug is off.
   Timeout when silent: false
+  # Rate between when slowed warnings appear (in milliseconds). This is used for minor warnings such as future-deprecation notices, to avoid error message flood.
+  Warning rate: 10000
   # Settings for tags like cuboid.get_blocks, location.find.blocks, ...
   Block tags:
     # How many blocks can be read, max, before stopping the tag in place
@@ -163,8 +158,3 @@ Packets:
   # It also enables hiding item script IDs and most likely has no real reason to be disabled.
   # Note that changing this setting requires a full server restart.
   Interception: true
-
-# The version of this configuration file, used to check if your
-# configuration file is outdated or too new
-Config:
-  Version: 15

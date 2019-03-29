@@ -5,7 +5,6 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dMaterial;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -91,7 +90,7 @@ public class StatisticCommand extends AbstractCommand {
     }
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         Element action = scriptEntry.getElement("action");
         dList players = scriptEntry.getdObject("players");
@@ -117,17 +116,17 @@ public class StatisticCommand extends AbstractCommand {
                 Material mat = material.getMaterial();
                 switch (act) {
                     case ADD:
-                        for (dPlayer player : players.filter(dPlayer.class)) {
+                        for (dPlayer player : players.filter(dPlayer.class, scriptEntry)) {
                             player.incrementStatistic(stat, mat, amt);
                         }
                         break;
                     case TAKE:
-                        for (dPlayer player : players.filter(dPlayer.class)) {
+                        for (dPlayer player : players.filter(dPlayer.class, scriptEntry)) {
                             player.decrementStatistic(stat, mat, amt);
                         }
                         break;
                     case SET:
-                        for (dPlayer player : players.filter(dPlayer.class)) {
+                        for (dPlayer player : players.filter(dPlayer.class, scriptEntry)) {
                             player.setStatistic(stat, mat, amt);
                         }
                         break;
@@ -138,17 +137,17 @@ public class StatisticCommand extends AbstractCommand {
                 EntityType ent = entity.getBukkitEntityType();
                 switch (act) {
                     case ADD:
-                        for (dPlayer player : players.filter(dPlayer.class)) {
+                        for (dPlayer player : players.filter(dPlayer.class, scriptEntry)) {
                             player.incrementStatistic(stat, ent, amt);
                         }
                         break;
                     case TAKE:
-                        for (dPlayer player : players.filter(dPlayer.class)) {
+                        for (dPlayer player : players.filter(dPlayer.class, scriptEntry)) {
                             player.decrementStatistic(stat, ent, amt);
                         }
                         break;
                     case SET:
-                        for (dPlayer player : players.filter(dPlayer.class)) {
+                        for (dPlayer player : players.filter(dPlayer.class, scriptEntry)) {
                             player.setStatistic(stat, ent, amt);
                         }
                         break;

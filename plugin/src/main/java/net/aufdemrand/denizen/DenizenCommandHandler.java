@@ -141,6 +141,7 @@ public class DenizenCommandHandler {
     // '-b' enables/disables the ScriptBuilder debug. When enabled, Denizen will show info on script and argument creation.
     //      Warning: Can be spammy.
     // '-n' enables/disables debug trimming. When enabled, messages longer than 512 characters will be 'snipped'.
+    // '-i' enables/disables source information. When enabled, debug will show where it came from (when possible).
     //
     // The dBugger also allows the targeting of specific scripts by using the '--filter script_name' argument. For
     // example: /denizen debug --filter 'my script|my other script' will instruct the dBugger to only debug the
@@ -156,7 +157,7 @@ public class DenizenCommandHandler {
     @Command(
             aliases = {"denizen"}, usage = "debug",
             desc = "Toggles debug mode for Denizen.", modifiers = {"debug", "de", "db", "dbug"},
-            min = 1, max = 5, permission = "denizen.debug", flags = "scebrxovn")
+            min = 1, max = 5, permission = "denizen.debug", flags = "scebrxovni")
     public void debug(CommandContext args, CommandSender sender) throws CommandException {
         if (args.hasFlag('s')) {
             if (!dB.showDebug) {
@@ -227,6 +228,14 @@ public class DenizenCommandHandler {
             dB.shouldTrim = !dB.shouldTrim;
             Messaging.sendInfo(sender, (dB.shouldTrim ? "Denizen dBugger is now trimming long messages."
                     : "Denizen dBugger is no longer trimming long messages."));
+        }
+        if (args.hasFlag('i')) {
+            if (!dB.showDebug) {
+                dB.toggle();
+            }
+            dB.showSources = !dB.showSources;
+            Messaging.sendInfo(sender, (dB.shouldTrim ? "Denizen dBugger is now showing source information."
+                    : "Denizen dBugger is no longer showing source information."));
         }
         if (args.hasValueFlag("filter")) {
             if (!dB.showDebug) {
@@ -308,7 +317,7 @@ public class DenizenCommandHandler {
     /*
      * DENIZEN RELOAD
      */
-    @Command(aliases = {"denizen"}, usage = "reload (saves|notables|config|scripts|externals) (-a)",
+    @Command(aliases = {"denizen"}, usage = "reload (saves|notables|config|scripts) (-a)",
             desc = "Reloads various Denizen files from disk to memory.", modifiers = {"reload"},
             min = 1, max = 3, permission = "denizen.basic", flags = "a")
     public void reload(CommandContext args, CommandSender sender) throws CommandException {
@@ -316,12 +325,11 @@ public class DenizenCommandHandler {
         // Get reload type
         if (args.hasFlag('a')) {
             denizen.reloadConfig();
-            denizen.runtimeCompiler.reload();
             DenizenCore.reloadScripts();
             denizen.notableManager().reloadNotables();
             denizen.reloadSaves();
             CommandScriptHelper.syncDenizenCommands();
-            Messaging.send(sender, "Denizen/saves.yml, Denizen/notables.yml, Denizen/config.yml, Denizen/scripts/..., and Denizen/externals/... reloaded from disk to memory.");
+            Messaging.send(sender, "Denizen/saves.yml, Denizen/notables.yml, Denizen/config.yml, and Denizen/scripts/... reloaded from disk to memory.");
             if (ScriptHelper.hadError()) {
                 Messaging.sendError(sender, "There was an error loading your scripts, check the console for details!");
             }
@@ -367,15 +375,10 @@ public class DenizenCommandHandler {
                 ReloadScriptsScriptEvent.instance.fire();
                 return;
             }
-            else if (args.getString(1).equalsIgnoreCase("externals")) {
-                denizen.runtimeCompiler.reload();
-                Messaging.send(sender, "Denizen/externals/... reloaded from disk to memory.");
-                return;
-            }
         }
 
         Messaging.send(sender, "");
-        Messaging.send(sender, "<f>Specify which parts to reload. Valid options are: SAVES, NOTABLES, CONFIG, SCRIPTS, EXTERNALS");
+        Messaging.send(sender, "<f>Specify which parts to reload. Valid options are: SAVES, NOTABLES, CONFIG, SCRIPTS");
         Messaging.send(sender, "<b>Example: /denizen reload scripts");
         Messaging.send(sender, "<f>Use '-a' to reload all parts.");
         Messaging.send(sender, "");

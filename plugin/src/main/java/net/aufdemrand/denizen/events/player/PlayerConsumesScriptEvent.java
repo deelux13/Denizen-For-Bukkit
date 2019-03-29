@@ -4,13 +4,11 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -19,10 +17,11 @@ public class PlayerConsumesScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // player consumes item (in <area>)
-    // player consumes <item> (in <area>)
+    // player consumes item
+    // player consumes <item>
     //
-    // @Regex ^on player consumes [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player consumes [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -52,25 +51,13 @@ public class PlayerConsumesScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String iCheck = CoreUtilities.getXthArg(2, lower);
+        String iCheck = path.eventArgLowerAt(2);
         return tryItem(item, iCheck) && runInCheck(path, event.getPlayer().getLocation());
     }
 
     @Override
     public String getName() {
         return "PlayerConsumes";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerItemConsumeEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -109,9 +96,7 @@ public class PlayerConsumesScriptEvent extends BukkitScriptEvent implements List
             return;
         }
         item = new dItem(event.getItem());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

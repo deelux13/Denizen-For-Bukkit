@@ -9,7 +9,6 @@ import net.aufdemrand.denizen.objects.dNPC;
 import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizen.utilities.depends.Depends;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -49,7 +48,7 @@ public class WalkCommand extends AbstractCommand implements Holdable {
             }
             else if (!scriptEntry.hasObject("auto_range")
                     && arg.matches("auto_range")) {
-                scriptEntry.addObject("auto_range", Element.TRUE);
+                scriptEntry.addObject("auto_range", new Element(true));
             }
             else if (!scriptEntry.hasObject("radius")
                     && arg.matchesPrimitive(aH.PrimitiveType.Double)
@@ -66,7 +65,7 @@ public class WalkCommand extends AbstractCommand implements Holdable {
             }
             else if (!scriptEntry.hasObject("entities")
                     && arg.matchesArgumentList(dEntity.class)) {
-                scriptEntry.addObject("entities", arg.asType(dList.class).filter(dEntity.class));
+                scriptEntry.addObject("entities", arg.asType(dList.class).filter(dEntity.class, scriptEntry));
             }
             else {
                 arg.reportUnhandled();
@@ -97,7 +96,7 @@ public class WalkCommand extends AbstractCommand implements Holdable {
 
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         // Fetch required objects
 
@@ -145,7 +144,7 @@ public class WalkCommand extends AbstractCommand implements Holdable {
                 }
 
                 if (auto_range != null
-                        && auto_range == Element.TRUE) {
+                        && auto_range == new Element(true)) {
                     double distance = npc.getLocation().distance(loc);
                     if (npc.getNavigator().getLocalParameters().range() < distance + 10) {
                         npc.getNavigator().getLocalParameters().range((float) distance + 10);

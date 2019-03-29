@@ -4,13 +4,11 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
@@ -47,9 +45,7 @@ public class PlayerChangesGamemodeScriptEvent extends BukkitScriptEvent implemen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String mode = CoreUtilities.getXthArg(4, lower);
+        String mode = path.eventArgLowerAt(4);
         if (mode.length() > 0) {
             if (!CoreUtilities.toLowerCase(gamemode.asString()).equals(mode)) {
                 return false;
@@ -61,16 +57,6 @@ public class PlayerChangesGamemodeScriptEvent extends BukkitScriptEvent implemen
     @Override
     public String getName() {
         return "PlayerChangesGamemode";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerGameModeChangeEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -97,9 +83,7 @@ public class PlayerChangesGamemodeScriptEvent extends BukkitScriptEvent implemen
             return;
         }
         gamemode = new Element(event.getNewGameMode().name());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

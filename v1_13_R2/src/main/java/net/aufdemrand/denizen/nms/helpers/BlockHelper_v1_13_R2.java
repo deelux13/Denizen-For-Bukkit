@@ -3,6 +3,7 @@ package net.aufdemrand.denizen.nms.helpers;
 import com.google.common.collect.Iterables;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
+import net.aufdemrand.denizen.nms.abstracts.ModernBlockData;
 import net.aufdemrand.denizen.nms.impl.blocks.BlockData_v1_13_R2;
 import net.aufdemrand.denizen.nms.impl.jnbt.CompoundTag_v1_13_R2;
 import net.aufdemrand.denizen.nms.interfaces.BlockData;
@@ -10,6 +11,7 @@ import net.aufdemrand.denizen.nms.interfaces.BlockHelper;
 import net.aufdemrand.denizen.nms.util.PlayerProfile;
 import net.aufdemrand.denizen.nms.util.ReflectionHelper;
 import net.aufdemrand.denizen.nms.util.jnbt.CompoundTag;
+import net.aufdemrand.denizencore.utilities.debugging.dB;
 import net.minecraft.server.v1_13_R2.*;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -33,10 +35,10 @@ public class BlockHelper_v1_13_R2 implements BlockHelper {
             return (T) f.get(cbs);
         }
         catch (IllegalAccessException e) {
-            e.printStackTrace();
+            dB.echoError(e);
         }
         catch (NoSuchFieldException e) {
-            e.printStackTrace();
+            dB.echoError(e);
         }
         return null;
     }
@@ -108,6 +110,11 @@ public class BlockHelper_v1_13_R2 implements BlockHelper {
     }
 
     @Override
+    public BlockData getBlockData(ModernBlockData data) {
+        return new BlockData_v1_13_R2(data.data);
+    }
+
+    @Override
     public BlockData getBlockData(Block block) {
         return new BlockData_v1_13_R2(block);
     }
@@ -161,4 +168,10 @@ public class BlockHelper_v1_13_R2 implements BlockHelper {
         // this is presumably more accurate these days
         return !material.isSolid();
     }
+
+    @Override
+    public org.bukkit.block.BlockState generateBlockState(Material mat) {
+        return new CraftBlockState(mat);
+    }
+
 }

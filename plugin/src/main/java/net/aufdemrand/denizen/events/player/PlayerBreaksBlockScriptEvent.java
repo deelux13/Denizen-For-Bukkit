@@ -3,7 +3,6 @@ package net.aufdemrand.denizen.events.player;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.*;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dList;
@@ -11,7 +10,6 @@ import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
@@ -23,12 +21,13 @@ public class PlayerBreaksBlockScriptEvent extends BukkitScriptEvent implements L
     // TODO: de-collide with breaks item
     // <--[event]
     // @Events
-    // player breaks block (in <area>)
-    // player breaks <material> (in <area>)
-    // player breaks block (in <area>)
-    // player breaks <material> (in <area>)
+    // player breaks block
+    // player breaks <material>
+    // player breaks block
+    // player breaks <material>
     //
-    // @Regex ^on player breaks [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player breaks [^\s]+$
+    // @Switch in <area>
     //
     // @Switch with <item>
     //
@@ -67,9 +66,7 @@ public class PlayerBreaksBlockScriptEvent extends BukkitScriptEvent implements L
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String mat = CoreUtilities.getXthArg(2, lower);
+        String mat = path.eventArgLowerAt(2);
         if (!tryMaterial(material, mat)) {
             return false;
         }
@@ -80,8 +77,8 @@ public class PlayerBreaksBlockScriptEvent extends BukkitScriptEvent implements L
             return false;
         }
         // Deprecated in favor of with: format
-        if (CoreUtilities.xthArgEquals(3, lower, "with")
-                && !tryItem(new dItem(event.getPlayer().getItemInHand()), CoreUtilities.getXthArg(4, lower))) {
+        if (path.eventArgLowerAt(3).equals("with")
+                && !tryItem(new dItem(event.getPlayer().getItemInHand()), path.eventArgLowerAt(4))) {
             return false;
         }
         return true;
@@ -90,16 +87,6 @@ public class PlayerBreaksBlockScriptEvent extends BukkitScriptEvent implements L
     @Override
     public String getName() {
         return "PlayerBreaksBlock";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        BlockBreakEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -117,7 +104,7 @@ public class PlayerBreaksBlockScriptEvent extends BukkitScriptEvent implements L
             cancelled = true;
             block.setType(Material.AIR);
 
-            for (dItem newItem : dList.valueOf(determination).filter(dItem.class)) {
+            for (dItem newItem : dList.valueOf(determination).filter(dItem.class, container)) {
                 block.getWorld().dropItemNaturally(block.getLocation(), newItem.getItemStack()); // Drop each item
             }
         }
@@ -160,14 +147,12 @@ public class PlayerBreaksBlockScriptEvent extends BukkitScriptEvent implements L
         if (dEntity.isNPC(event.getPlayer())) {
             return;
         }
-        material = dMaterial.getMaterialFrom(event.getBlock().getType(), event.getBlock().getData());
+        material = new dMaterial(event.getBlock());
         location = new dLocation(event.getBlock().getLocation());
         cuboids = null;
-        cancelled = event.isCancelled();
         xp = new Element(event.getExpToDrop());
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setExpToDrop(xp.asInt());
     }
 

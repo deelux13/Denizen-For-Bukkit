@@ -3,11 +3,9 @@ package net.aufdemrand.denizen.events.entity;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
@@ -16,10 +14,11 @@ public class VehicleMoveScriptEvent extends BukkitScriptEvent implements Listene
 
     // <--[event]
     // @Events
-    // vehicle moves (in <area>)
-    // <vehicle> moves (in <area>)
+    // vehicle moves
+    // <vehicle> moves
     //
-    // @Regex ^on [^\s]+ moves( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ moves$
+    // @Switch in <area>
     //
     // @Warning This event fires very very rapidly!
     //
@@ -50,10 +49,8 @@ public class VehicleMoveScriptEvent extends BukkitScriptEvent implements Listene
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(vehicle, CoreUtilities.getXthArg(0, lower))) {
+        if (!tryEntity(vehicle, path.eventArgLowerAt(0))) {
             return false;
         }
 
@@ -69,16 +66,6 @@ public class VehicleMoveScriptEvent extends BukkitScriptEvent implements Listene
     @Override
     public String getName() {
         return "VehicleMoves";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        VehicleMoveEvent.getHandlerList().unregister(this);
     }
 
     @Override

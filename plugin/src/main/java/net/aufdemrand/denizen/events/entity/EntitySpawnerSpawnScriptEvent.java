@@ -4,12 +4,10 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -19,10 +17,11 @@ public class EntitySpawnerSpawnScriptEvent extends BukkitScriptEvent implements 
 
     // <--[event]
     // @Events
-    // spawner spawns entity (in <area>)
-    // spawner spawns <entity> (in <area>)
+    // spawner spawns entity
+    // spawner spawns <entity>
     //
-    // @Regex ^on spawner spawns [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on spawner spawns [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -52,10 +51,8 @@ public class EntitySpawnerSpawnScriptEvent extends BukkitScriptEvent implements 
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(2, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(2))) {
             return false;
         }
 
@@ -65,16 +62,6 @@ public class EntitySpawnerSpawnScriptEvent extends BukkitScriptEvent implements 
     @Override
     public String getName() {
         return "SpawnerSpawn";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        SpawnerSpawnEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -108,11 +95,9 @@ public class EntitySpawnerSpawnScriptEvent extends BukkitScriptEvent implements 
         this.entity = new dEntity(entity);
         location = new dLocation(event.getLocation());
         spawnerLocation = new dLocation(event.getSpawner().getLocation());
-        cancelled = event.isCancelled();
         this.event = event;
         dEntity.rememberEntity(entity);
-        fire();
+        fire(event);
         dEntity.forgetEntity(entity);
-        event.setCancelled(cancelled);
     }
 }

@@ -4,12 +4,10 @@ import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerPortalEvent;
@@ -18,9 +16,10 @@ public class PlayerUsesPortalScriptEvent extends BukkitScriptEvent implements Li
 
     // <--[event]
     // @Events
-    // player uses portal (in <area>)
+    // player uses portal
     //
-    // @Regex ^on player uses portal( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player uses portal$
+    // @Switch in <area>
     //
     // @Triggers when a player enters a portal.
     //
@@ -49,24 +48,12 @@ public class PlayerUsesPortalScriptEvent extends BukkitScriptEvent implements Li
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
         return runInCheck(path, to) || runInCheck(path, from);
     }
 
     @Override
     public String getName() {
         return "PlayerUsesPortal";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerPortalEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -103,12 +90,10 @@ public class PlayerUsesPortalScriptEvent extends BukkitScriptEvent implements Li
             return;
         }
         entity = new dEntity(event.getPlayer());
-        to = new dLocation(event.getTo());
+        to = event.getTo() == null ? null : new dLocation(event.getTo());
         from = new dLocation(event.getFrom());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setTo(to);
     }
 }

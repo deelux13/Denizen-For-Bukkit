@@ -2,13 +2,11 @@ package net.aufdemrand.denizen.events.entity;
 
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Horse;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,10 +16,11 @@ public class HorseJumpsScriptEvent extends BukkitScriptEvent implements Listener
 
     // <--[event]
     // @Events
-    // horse jumps (in <area>)
-    // (<color>) (<type>) jumps (in <area>)
+    // horse jumps
+    // (<color>) (<type>) jumps
     //
-    // @Regex ^on [^\s]+( [^\s]+)? jumps( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+( [^\s]+)? jumps$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -58,17 +57,15 @@ public class HorseJumpsScriptEvent extends BukkitScriptEvent implements Listener
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String arg1 = CoreUtilities.getXthArg(0, lower);
-        String arg2 = CoreUtilities.getXthArg(1, lower);
+        String arg1 = path.eventArgLowerAt(0);
+        String arg2 = path.eventArgLowerAt(1);
         String tamed = arg2.equals("jumps") ? arg1 : arg2;
 
         if (!tryEntity(entity, tamed) || !tamed.equals(CoreUtilities.toLowerCase(variant.toString()))) {
             return false;
         }
 
-        if (CoreUtilities.getXthArg(2, lower).equals("jumps") && !arg1.equals(CoreUtilities.toLowerCase(color.toString()))) {
+        if (path.eventArgLowerAt(2).equals("jumps") && !arg1.equals(CoreUtilities.toLowerCase(color.toString()))) {
             return false;
         }
 
@@ -82,16 +79,6 @@ public class HorseJumpsScriptEvent extends BukkitScriptEvent implements Listener
     @Override
     public String getName() {
         return "HorseJumps";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        HorseJumpEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -127,10 +114,8 @@ public class HorseJumpsScriptEvent extends BukkitScriptEvent implements Listener
             color = new Element(((Horse) event.getEntity()).getColor().name());
             variant = new Element(event.getEntity().getVariant().name());
             power = event.getPower();
-            cancelled = event.isCancelled();
             this.event = event;
-            fire();
-            event.setCancelled(cancelled);
+            fire(event);
             event.setPower(power);
         }
     }

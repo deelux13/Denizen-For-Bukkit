@@ -3,7 +3,6 @@ package net.aufdemrand.denizen.scripts.commands.entity;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.properties.entity.EntityAge;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -84,7 +83,7 @@ public class AgeCommand extends AbstractCommand {
 
             if (!scriptEntry.hasObject("entities")
                     && arg.matchesArgumentList(dEntity.class)) {
-                scriptEntry.addObject("entities", arg.asType(dList.class).filter(dEntity.class));
+                scriptEntry.addObject("entities", arg.asType(dList.class).filter(dEntity.class, scriptEntry));
             }
             else if (!scriptEntry.hasObject("agetype")
                     && arg.matchesEnum(AgeType.values())) {
@@ -96,7 +95,7 @@ public class AgeCommand extends AbstractCommand {
             }
             else if (!scriptEntry.hasObject("lock")
                     && arg.matches("lock")) {
-                scriptEntry.addObject("lock", Element.TRUE);
+                scriptEntry.addObject("lock", new Element(true));
             }
             else {
                 arg.reportUnhandled();
@@ -115,7 +114,7 @@ public class AgeCommand extends AbstractCommand {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void execute(final ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(final ScriptEntry scriptEntry) {
 
         // Get objects
         List<dEntity> entities = (List<dEntity>) scriptEntry.getObject("entities");

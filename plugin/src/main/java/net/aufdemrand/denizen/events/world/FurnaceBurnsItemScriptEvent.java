@@ -3,12 +3,10 @@ package net.aufdemrand.denizen.events.world;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.FurnaceBurnEvent;
@@ -17,10 +15,11 @@ public class FurnaceBurnsItemScriptEvent extends BukkitScriptEvent implements Li
 
     // <--[event]
     // @Events
-    // furnace burns item (in <area>)
-    // furnace burns <item> (in <area>)
+    // furnace burns item
+    // furnace burns <item>
     //
-    // @Regex ^on furnace burns [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on furnace burns [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -52,9 +51,7 @@ public class FurnaceBurnsItemScriptEvent extends BukkitScriptEvent implements Li
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String iTest = CoreUtilities.getXthArg(2, lower);
+        String iTest = path.eventArgLowerAt(2);
         return tryItem(item, iTest)
                 && runInCheck(path, location);
     }
@@ -62,16 +59,6 @@ public class FurnaceBurnsItemScriptEvent extends BukkitScriptEvent implements Li
     @Override
     public String getName() {
         return "FurnaceBurns";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        FurnaceBurnEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -99,10 +86,8 @@ public class FurnaceBurnsItemScriptEvent extends BukkitScriptEvent implements Li
         location = new dLocation(event.getBlock().getLocation());
         item = new dItem(event.getFuel());
         burntime = event.getBurnTime();
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
+        fire(event);
         event.setBurnTime(burntime);
-        event.setCancelled(cancelled);
     }
 }

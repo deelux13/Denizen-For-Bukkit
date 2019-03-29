@@ -1,5 +1,6 @@
 package net.aufdemrand.denizen.nms.impl.blocks;
 
+import net.aufdemrand.denizen.nms.abstracts.ModernBlockData;
 import net.aufdemrand.denizen.nms.impl.jnbt.CompoundTag_v1_13_R2;
 import net.aufdemrand.denizen.nms.interfaces.BlockData;
 import net.aufdemrand.denizen.nms.util.jnbt.CompoundTag;
@@ -28,6 +29,11 @@ public class BlockData_v1_13_R2 implements BlockData {
             mat = Bukkit.getUnsafe().toLegacy(mat);
         }
         blockData = Bukkit.getUnsafe().fromLegacy(mat, dat);
+    }
+
+    public BlockData_v1_13_R2(org.bukkit.block.data.BlockData data) {
+        this.blockData = data;
+        // TODO: ctag?
     }
 
     public BlockData_v1_13_R2(Block block) {
@@ -96,5 +102,10 @@ public class BlockData_v1_13_R2 implements BlockData {
     @Override
     public void setData(byte data) {
         // no
+    }
+
+    @Override
+    public ModernBlockData modern() {
+        return new ModernBlockData(blockData);
     }
 }

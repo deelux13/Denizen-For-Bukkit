@@ -7,12 +7,10 @@ import net.aufdemrand.denizen.nms.NMSVersion;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
@@ -24,12 +22,13 @@ public class ProjectileHitsScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // projectile hits block (in <area>)
-    // projectile hits <material> (in <area>)
-    // <projectile> hits block (in <area>)
-    // <projectile> hits <material> (in <area>)
+    // projectile hits block
+    // projectile hits <material>
+    // <projectile> hits block
+    // <projectile> hits <material>
     //
-    // @Regex ^on [^\s]+ hits [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ hits [^\s]+$
+    // @Switch in <area>
     //
     // @Triggers when a projectile hits a block.
     //
@@ -42,10 +41,13 @@ public class ProjectileHitsScriptEvent extends BukkitScriptEvent implements List
 
     // <--[event]
     // @Events
-    // entity shoots block (in <area>)
-    // entity shoots <material> (with <projectile>) (in <area>)
-    // <entity> shoots block (in <area>)
-    // <entity> shoots <material> (with <projectile>) (in <area>)
+    // entity shoots block
+    // entity shoots <material> (with <projectile>)
+    // <entity> shoots block
+    // <entity> shoots <material> (with <projectile>)
+    //
+    // @Regex ^on [^\s]+ shoots [^\s]+$
+    // @Switch in <area>
     //
     // @Triggers when a projectile shot by an entity hits a block.
     //
@@ -75,22 +77,20 @@ public class ProjectileHitsScriptEvent extends BukkitScriptEvent implements List
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String cmd = CoreUtilities.getXthArg(1, lower);
+        String cmd = path.eventArgLowerAt(1);
         String pTest = "";
 
         if (cmd.equals("hits")) {
-            pTest = CoreUtilities.getXthArg(0, lower);
+            pTest = path.eventArgLowerAt(0);
         }
-        else if (cmd.equals("shoots") && CoreUtilities.xthArgEquals(3, lower, "with")) {
-            pTest = CoreUtilities.getXthArg(4, lower);
+        else if (cmd.equals("shoots") && path.eventArgLowerAt(3).equals("with")) {
+            pTest = path.eventArgLowerAt(4);
         }
         if (!pTest.isEmpty() && !pTest.equals("projectile") && !tryEntity(projectile, pTest)) {
             return false;
         }
 
-        if (!tryMaterial(material, CoreUtilities.getXthArg(2, lower))) {
+        if (!tryMaterial(material, path.eventArgLowerAt(2))) {
             return false;
         }
 
@@ -105,16 +105,6 @@ public class ProjectileHitsScriptEvent extends BukkitScriptEvent implements List
     @Override
     public String getName() {
         return "ProjectileHits";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        ProjectileHitEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -178,7 +168,7 @@ public class ProjectileHitsScriptEvent extends BukkitScriptEvent implements List
         if (block == null) {
             return;
         }
-        material = dMaterial.getMaterialFrom(block.getType(), block.getData());
+        material = new dMaterial(block);
         shooter = projectile.getShooter();
         location = new dLocation(block.getLocation());
         this.event = event;

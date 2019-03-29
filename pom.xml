@@ -6,23 +6,20 @@
     <groupId>net.aufdemrand</groupId>
     <artifactId>denizen-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.4-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <craftbukkit.version>1.13.2-R0.1-SNAPSHOT</craftbukkit.version>
-        <json.version>20090211</json.version>
         <citizens.version>2.0.24-SNAPSHOT</citizens.version>
-        <dcore.version>1.30</dcore.version>
+        <dcore.version>1.40</dcore.version>
         <BUILD_NUMBER>Unknown</BUILD_NUMBER>
         <BUILD_CLASS>CUSTOM</BUILD_CLASS>
-        <DENIZEN_VERSION>1.0.3</DENIZEN_VERSION>
+        <DENIZEN_VERSION>1.0.4</DENIZEN_VERSION>
     </properties>
 
     <modules>
         <module>nmshandler</module>
-        <module>v1_8_R3</module>
-        <module>v1_9_R2</module>
         <module>v1_10_R1</module>
         <module>v1_11_R1</module>
         <module>v1_12_R1</module>
@@ -36,20 +33,16 @@
             <id>everything</id>
             <url>http://repo.citizensnpcs.co</url>
         </repository>
-        <repository>
-            <id>vault-repo</id>
-            <url>http://nexus.hc.to/content/repositories/pub_releases/</url>
-        </repository>
     </repositories>
 
     <ciManagement>
         <system>jenkins</system>
-        <url>http://ci.citizensnpcs.co</url>
+        <url>https://ci.citizensnpcs.co</url>
     </ciManagement>
     <scm>
-        <connection>scm:git:git://github.com/aufdemrand/Denizen.git</connection>
-        <developerConnection>scm:git:git:@github.com:aufdemrand/Denizen.git</developerConnection>
-        <url>https://github.com/aufdemrand/Denizen/tree/master/</url>
+        <connection>scm:git:git://github.com/DenizenScript/Denizen-For-Bukkit.git</connection>
+        <developerConnection>scm:git:git:@github.com:DenizenScript/Denizen-For-Bukkit.git</developerConnection>
+        <url>https://github.com/DenizenScript/Denizen-For-Bukkit/tree/dev/</url>
     </scm>
 
     <build>
@@ -68,5 +61,5 @@
         </plugins>
     </build>
 
-    <url>http://wiki.citizensnpcs.co/Denizen</url>
+    <url>https://wiki.citizensnpcs.co/Denizen</url>
 </project>

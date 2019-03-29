@@ -6,12 +6,10 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,10 +19,11 @@ public class PlayerDropsItemScriptEvent extends BukkitScriptEvent implements Lis
 
     // <--[event]
     // @Events
-    // player drops item (in <area>)
-    // player drops <item> (in <area>)
+    // player drops item
+    // player drops <item>
     //
-    // @Regex ^on player drops [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player drops [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -54,10 +53,8 @@ public class PlayerDropsItemScriptEvent extends BukkitScriptEvent implements Lis
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        String iCheck = CoreUtilities.getXthArg(2, lower);
+        String iCheck = path.eventArgLowerAt(2);
         if (!iCheck.equals("item") && !tryItem(item, iCheck)) {
             return false;
         }
@@ -70,16 +67,6 @@ public class PlayerDropsItemScriptEvent extends BukkitScriptEvent implements Lis
     @Override
     public String getName() {
         return "PlayerDropsItem";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerDropItemEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -116,9 +103,7 @@ public class PlayerDropsItemScriptEvent extends BukkitScriptEvent implements Lis
         dEntity.rememberEntity(itemDrop);
         item = new dItem(itemDrop.getItemStack());
         entity = new dEntity(itemDrop);
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

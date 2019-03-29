@@ -5,28 +5,25 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.nms.NMSHandler;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerFishEvent;
 
-import java.util.List;
-
 public class PlayerFishesScriptEvent extends BukkitScriptEvent implements Listener {
 
     // <--[event]
     // @Events
-    // player fishes (<entity>/<item>) (while <state>) (in <area>)
+    // player fishes (<entity>/<item>) (while <state>)
     //
-    // @Regex ^on player fishes( [^\s]+)?( while [^\s]+)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player fishes( [^\s]+)?( while [^\s]+)?$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -58,9 +55,7 @@ public class PlayerFishesScriptEvent extends BukkitScriptEvent implements Listen
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String fish = CoreUtilities.getXthArg(2, lower);
+        String fish = path.eventArgLowerAt(2);
 
         if (!fish.isEmpty() && !fish.equals("in") && !fish.equals("while")) {
             if (entity == null) {
@@ -76,9 +71,9 @@ public class PlayerFishesScriptEvent extends BukkitScriptEvent implements Listen
             }
         }
 
-        List<String> data = CoreUtilities.split(lower, ' ');
-        for (int index = 2; index < data.size(); index++) {
-            if (data.get(index).equals("while") && !data.get(index + 1).equalsIgnoreCase(state.asString())) {
+        String[] data = path.eventArgsLower;
+        for (int index = 2; index < data.length; index++) {
+            if (data[index].equals("while") && !data[index + 1].equalsIgnoreCase(state.asString())) {
                 return false;
             }
         }
@@ -93,16 +88,6 @@ public class PlayerFishesScriptEvent extends BukkitScriptEvent implements Listen
     @Override
     public String getName() {
         return "PlayerFishes";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerFishEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -154,11 +139,9 @@ public class PlayerFishesScriptEvent extends BukkitScriptEvent implements Listen
                 item = new dItem(((Item) caughtEntity).getItemStack());
             }
         }
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
+        fire(event);
         dEntity.forgetEntity(hookEntity);
         dEntity.forgetEntity(caughtEntity);
-        event.setCancelled(cancelled);
     }
 }

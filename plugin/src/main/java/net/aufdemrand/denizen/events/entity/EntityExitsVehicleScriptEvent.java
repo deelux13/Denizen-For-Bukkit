@@ -3,12 +3,10 @@ package net.aufdemrand.denizen.events.entity;
 import net.aufdemrand.denizen.BukkitScriptEntryData;
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.vehicle.VehicleExitEvent;
@@ -17,12 +15,13 @@ public class EntityExitsVehicleScriptEvent extends BukkitScriptEvent implements 
 
     // <--[event]
     // @Events
-    // entity exits vehicle (in <area>)
-    // entity exits <vehicle> (in <area>)
-    // <entity> exits vehicle (in <area>)
-    // <entity> exits <vehicle> (in <area>)
+    // entity exits vehicle
+    // entity exits <vehicle>
+    // <entity> exits vehicle
+    // <entity> exits <vehicle>
     //
-    // @Regex ^on [^\s]+ exits [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ exits [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -54,11 +53,9 @@ public class EntityExitsVehicleScriptEvent extends BukkitScriptEvent implements 
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        if (!tryEntity(entity, CoreUtilities.getXthArg(0, lower))
-                || !tryEntity(vehicle, CoreUtilities.getXthArg(2, lower))) {
+        if (!tryEntity(entity, path.eventArgLowerAt(0))
+                || !tryEntity(vehicle, path.eventArgLowerAt(2))) {
             return false;
         }
 
@@ -72,16 +69,6 @@ public class EntityExitsVehicleScriptEvent extends BukkitScriptEvent implements 
     @Override
     public String getName() {
         return "EntityExitsVehicle";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        VehicleExitEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -111,8 +98,6 @@ public class EntityExitsVehicleScriptEvent extends BukkitScriptEvent implements 
         vehicle = new dEntity(event.getVehicle());
         entity = new dEntity(event.getExited());
         this.event = event;
-        cancelled = event.isCancelled();
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

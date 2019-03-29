@@ -6,14 +6,12 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerItemMendEvent;
@@ -22,10 +20,11 @@ public class PlayerMendsItemScriptEvent extends BukkitScriptEvent implements Lis
 
     // <--[event]
     // @Events
-    // player mends item (in <area>)
-    // player mends <item> (in <area>)
+    // player mends item
+    // player mends <item>
     //
-    // @Regex ^on player mends [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player mends [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -59,10 +58,8 @@ public class PlayerMendsItemScriptEvent extends BukkitScriptEvent implements Lis
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
 
-        String iItem = CoreUtilities.getXthArg(2, lower);
+        String iItem = path.eventArgLowerAt(2);
         if (!tryItem(item, iItem)) {
             return false;
         }
@@ -75,16 +72,6 @@ public class PlayerMendsItemScriptEvent extends BukkitScriptEvent implements Lis
     @Override
     public String getName() {
         return "PlayerMendsItem";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerItemMendEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -124,10 +111,8 @@ public class PlayerMendsItemScriptEvent extends BukkitScriptEvent implements Lis
         experienceOrb = new dEntity(event.getExperienceOrb());
         location = new dLocation(event.getPlayer().getLocation());
         repairAmount = new Element(event.getRepairAmount());
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setRepairAmount(repairAmount.asInt());
     }
 

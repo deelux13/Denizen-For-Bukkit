@@ -6,7 +6,6 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.scripts.containers.core.FormatScriptContainer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dList;
@@ -15,7 +14,6 @@ import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.ScriptRegistry;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -31,9 +29,10 @@ public class ChatScriptEvent extends BukkitScriptEvent implements Listener {
     // TODO: in area
     // <--[event]
     // @Events
-    // player chats (in <area>)
+    // player chats
     //
-    // @Regex ^on player chats( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player chats$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -91,20 +90,10 @@ public class ChatScriptEvent extends BukkitScriptEvent implements Listener {
     public void init() {
         async = Settings.worldScriptChatEventAsynchronous();
         if (async) {
-            Bukkit.getServer().getPluginManager().registerEvents(asch, DenizenAPI.getCurrentInstance());
+            initListener(asch);
         }
         else {
-            Bukkit.getServer().getPluginManager().registerEvents(sch, DenizenAPI.getCurrentInstance());
-        }
-    }
-
-    @Override
-    public void destroy() {
-        if (async) {
-            AsyncPlayerChatEvent.getHandlerList().unregister(asch);
-        }
-        else {
-            PlayerChatEvent.getHandlerList().unregister(sch);
+            initListener(sch);
         }
     }
 
@@ -112,7 +101,7 @@ public class ChatScriptEvent extends BukkitScriptEvent implements Listener {
     public boolean applyDetermination(ScriptContainer container, String determination) {
         String lower = CoreUtilities.toLowerCase(determination);
         if (lower.startsWith("format:")) {
-            String name = determination.substring(7);
+            String name = determination.substring("format:".length());
             FormatScriptContainer formatscr = ScriptRegistry.getScriptContainer(name);
             if (formatscr == null) {
                 dB.echoError("Could not find format script matching '" + name + '\'');
@@ -125,14 +114,14 @@ public class ChatScriptEvent extends BukkitScriptEvent implements Listener {
                 format = new Element(formatstr);
             }
         }
-        else if (lower.startsWith("raw_format")) {
-            String form = determination.substring("raw_format".length());
+        else if (lower.startsWith("raw_format:")) {
+            String form = determination.substring("raw_format:".length());
             format = new Element(form);
         }
         else if (lower.startsWith("recipients:")) {
-            String rec_new = determination.substring(11);
+            String rec_new = determination.substring("recipients:".length());
             dList recs = dList.valueOf(rec_new);
-            List<dPlayer> players = recs.filter(dPlayer.class);
+            List<dPlayer> players = recs.filter(dPlayer.class, container);
             recipients.clear();
             for (dPlayer player : players) {
                 recipients.add(player.getPlayerEntity());
@@ -175,13 +164,11 @@ public class ChatScriptEvent extends BukkitScriptEvent implements Listener {
         public void onSyncChat(PlayerChatEvent event) {
             message = new Element(event.getMessage());
             format = new Element(event.getFormat());
-            cancelled = event.isCancelled();
             recipients = new HashSet<Player>(event.getRecipients());
             pcEvent = event;
             apcEvent = null;
             player = dEntity.getPlayerFrom(event.getPlayer());
-            fire();
-            event.setCancelled(cancelled);
+            fire(event);
             event.setMessage(message.asString());
             event.setFormat(format.asString());
             event.getRecipients().clear();
@@ -194,13 +181,11 @@ public class ChatScriptEvent extends BukkitScriptEvent implements Listener {
         public void onAsyncChat(AsyncPlayerChatEvent event) {
             message = new Element(event.getMessage());
             format = new Element(event.getFormat());
-            cancelled = event.isCancelled();
             recipients = new HashSet<Player>(event.getRecipients());
             pcEvent = null;
             apcEvent = event;
             player = dEntity.getPlayerFrom(event.getPlayer());
-            fire();
-            event.setCancelled(cancelled);
+            fire(event);
             event.setMessage(message.asString());
             event.setFormat(format.asString());
             event.getRecipients().clear();

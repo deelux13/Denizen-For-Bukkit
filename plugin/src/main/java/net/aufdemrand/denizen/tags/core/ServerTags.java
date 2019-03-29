@@ -2,6 +2,7 @@ package net.aufdemrand.denizen.tags.core;
 
 import net.aufdemrand.denizen.Denizen;
 import net.aufdemrand.denizen.Settings;
+import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.flags.FlagManager;
 import net.aufdemrand.denizen.nms.NMSHandler;
 import net.aufdemrand.denizen.npc.traits.AssignmentTrait;
@@ -16,6 +17,7 @@ import net.aufdemrand.denizen.scripts.commands.server.BossBarCommand;
 import net.aufdemrand.denizen.scripts.containers.core.AssignmentScriptContainer;
 import net.aufdemrand.denizen.tags.BukkitTagContext;
 import net.aufdemrand.denizen.utilities.DenizenAPI;
+import net.aufdemrand.denizen.utilities.ScoreboardHelper;
 import net.aufdemrand.denizen.utilities.Utilities;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizen.utilities.depends.Depends;
@@ -31,23 +33,32 @@ import net.aufdemrand.denizencore.tags.Attribute;
 import net.aufdemrand.denizencore.tags.ReplaceableTagEvent;
 import net.aufdemrand.denizencore.tags.TagManager;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
+import net.aufdemrand.denizencore.utilities.debugging.SlowWarning;
 import net.aufdemrand.denizencore.utilities.javaluator.DoubleEvaluator;
 import net.citizensnpcs.Citizens;
 import net.citizensnpcs.api.CitizensAPI;
+import net.citizensnpcs.api.command.CommandContext;
 import net.citizensnpcs.api.npc.NPC;
 import org.bukkit.*;
+import org.bukkit.block.Biome;
+import org.bukkit.block.banner.PatternType;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.map.MapCursor;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredListener;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.potion.PotionType;
+import org.bukkit.scoreboard.Scoreboard;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class ServerTags {
@@ -73,6 +84,8 @@ public class ServerTags {
         }, "server", "svr", "global");
     }
 
+    public SlowWarning mathShorthand = new SlowWarning("Short-named tags are hard to read. Please use 'math' instead of 'm' as a root tag.");
+
     // <--[tag]
     // @attribute <math:<calculation>>
     // @returns Element(Decimal)
@@ -87,8 +100,7 @@ public class ServerTags {
             return;
         }
         if (event.matches("m")) {
-            dB.echoError(event.getScriptEntry() == null ? null : event.getScriptEntry().getResidingQueue(),
-                    "Short-named tags are hard to read. Please use 'math' instead of 'm' as a root tag.");
+            mathShorthand.warn(event.getScriptEntry());
         }
         try {
             Double evaluation = new DoubleEvaluator().evaluate(event.getValue());
@@ -100,6 +112,7 @@ public class ServerTags {
         }
     }
 
+    public SlowWarning ternShorthand = new SlowWarning("Short-named tags are hard to read. Please use 'tern' instead of 't' as a root tag.");
 
     // <--[tag]
     // @attribute <tern[<condition>]:<element>||<element>>
@@ -115,8 +128,7 @@ public class ServerTags {
             return;
         }
         if (event.matches("t")) {
-            dB.echoError(event.getScriptEntry() == null ? null : event.getScriptEntry().getResidingQueue(),
-                    "Short-named tags are hard to read. Please use 'tern' instead of 't' as a root tag.");
+            ternShorthand.warn(event.getScriptEntry());
         }
 
         // Fallback if nothing to evaluate
@@ -132,14 +144,15 @@ public class ServerTags {
         }
     }
 
+    public SlowWarning serverShorthand = new SlowWarning("Short-named tags are hard to read. Please use 'server' instead of 'svr' as a root tag.");
+
 
     public void serverTag(ReplaceableTagEvent event) {
         if (!event.matches("server", "svr", "global") || event.replaced()) {
             return;
         }
         if (event.matches("srv")) {
-            dB.echoError(event.getScriptEntry() == null ? null : event.getScriptEntry().getResidingQueue(),
-                    "Short-named tags are hard to read. Please use 'server' instead of 'svr' as a root tag.");
+            serverShorthand.warn(event.getScriptEntry());
         }
         if (event.matches("global")) {
             dB.echoError(event.getScriptEntry() == null ? null : event.getScriptEntry().getResidingQueue(),
@@ -160,6 +173,46 @@ public class ServerTags {
                 event.setReplaced(new Element(slotId).getAttribute(attribute.fulfill(1)));
             }
             return;
+        }
+
+        if (attribute.startsWith("scoreboard")) {
+            Scoreboard board;
+            String name = "main";
+            if (attribute.hasContext(1)) {
+                name = attribute.getContext(1);
+                board = ScoreboardHelper.getScoreboard(name);
+            }
+            else {
+                board = ScoreboardHelper.getMain();
+            }
+            // <--[tag]
+            // @attribute <server.scoreboard[<board>].exists>
+            // @returns dList
+            // @description
+            // Returns whether a given scoreboard exists on the server.
+            // -->
+            if (attribute.startsWith("exists")) {
+                event.setReplaced(new Element(board != null).getAttribute(attribute.fulfill(2)));
+                return;
+            }
+            if (board == null) {
+                if (!attribute.hasAlternative()) {
+                    dB.echoError("Scoreboard '" + name + "' does not exist.");
+                }
+                return;
+            }
+            // <--[tag]
+            // @attribute <server.scoreboard[(<board>)].team_members[<team>]>
+            // @returns dList
+            // @description
+            // Returns a list of all members of a scoreboard team. Generally returns as a list of names or text entries.
+            // Members are not necessarily written in any given format and are not guaranteed to validly fit any requirements.
+            // Optionally, specify which scoreboard to use.
+            // -->
+            if (attribute.startsWith("team_members") && attribute.hasContext(2)) {
+                event.setReplacedObject(new dList(board.getEntries()).getObjectAttribute(attribute.fulfill(2)));
+                return;
+            }
         }
 
         // <--[tag]
@@ -242,17 +295,17 @@ public class ServerTags {
         }
 
         // <--[tag]
-        // @attribute <server.list_materials>
+        // @attribute <server.list_biomes>
         // @returns dList
         // @description
-        // Returns a list of all materials known to the server (only their Bukkit enum names).
+        // Returns a list of all biomes known to the server (only their Bukkit enum names).
         // -->
-        if (attribute.startsWith("list_materials")) {
-            dList allMats = new dList();
-            for (Material mat : Material.values()) {
-                allMats.add(mat.name());
+        if (attribute.startsWith("list_biomes")) {
+            dList allBiomes = new dList();
+            for (Biome biome : Biome.values()) {
+                allBiomes.add(biome.name());
             }
-            event.setReplaced(allMats.getAttribute(attribute.fulfill(1)));
+            event.setReplaced(allBiomes.getAttribute(attribute.fulfill(1)));
         }
 
         // <--[tag]
@@ -270,6 +323,34 @@ public class ServerTags {
         }
 
         // <--[tag]
+        // @attribute <server.list_entity_types>
+        // @returns dList
+        // @description
+        // Returns a list of all entity types known to the server (only their Bukkit enum names).
+        // -->
+        if (attribute.startsWith("list_entity_types")) {
+            dList allEnt = new dList();
+            for (EntityType entity : EntityType.values()) {
+                allEnt.add(entity.name());
+            }
+            event.setReplaced(allEnt.getAttribute(attribute.fulfill(1)));
+        }
+
+        // <--[tag]
+        // @attribute <server.list_materials>
+        // @returns dList
+        // @description
+        // Returns a list of all materials known to the server (only their Bukkit enum names).
+        // -->
+        if (attribute.startsWith("list_materials")) {
+            dList allMats = new dList();
+            for (Material mat : Material.values()) {
+                allMats.add(mat.name());
+            }
+            event.setReplaced(allMats.getAttribute(attribute.fulfill(1)));
+        }
+
+        // <--[tag]
         // @attribute <server.list_sounds>
         // @returns dList
         // @description
@@ -281,6 +362,93 @@ public class ServerTags {
                 sounds.add(s.toString());
             }
             event.setReplaced(sounds.getAttribute(attribute.fulfill(1)));
+        }
+
+        // <--[tag]
+        // @attribute <server.list_patterns>
+        // @returns dList
+        // @description
+        // Returns a list of all banner patterns known to the server (only their Bukkit enum names).
+        // -->
+        if (attribute.startsWith("list_patterns")) {
+            dList allPatterns = new dList();
+            for (PatternType pat : PatternType.values()) {
+                allPatterns.add(pat.toString());
+            }
+            event.setReplaced(allPatterns.getAttribute(attribute.fulfill(1)));
+        }
+
+        // <--[tag]
+        // @attribute <server.list_potion_effects>
+        // @returns dList
+        // @description
+        // Returns a list of all potion effects known to the server.
+        // Can be used with <@link command cast>.
+        // -->
+        if (attribute.startsWith("list_potion_effects")) {
+            dList statuses = new dList();
+            for (PotionEffectType effect : PotionEffectType.values()) {
+                if (effect != null) {
+                    statuses.add(effect.getName());
+                }
+            }
+            event.setReplaced(statuses.getAttribute(attribute.fulfill(1)));
+        }
+
+        // <--[tag]
+        // @attribute <server.list_potion_types>
+        // @returns dList
+        // @description
+        // Returns a list of all potion types known to the server (only their Bukkit enum names).
+        // -->
+        if (attribute.startsWith("list_potion_types")) {
+            dList potionTypes = new dList();
+            for (PotionType type : PotionType.values()) {
+                potionTypes.add(type.toString());
+            }
+            event.setReplaced(potionTypes.getAttribute(attribute.fulfill(1)));
+        }
+
+        // <--[tag]
+        // @attribute <server.list_tree_types>
+        // @returns dList
+        // @description
+        // Returns a list of all tree types known to the server (only their Bukkit enum names).
+        // -->
+        if (attribute.startsWith("list_tree_types")) {
+            dList allTrees = new dList();
+            for (TreeType tree : TreeType.values()) {
+                allTrees.add(tree.name());
+            }
+            event.setReplaced(allTrees.getAttribute(attribute.fulfill(1)));
+        }
+
+        // <--[tag]
+        // @attribute <server.list_map_cursor_types>
+        // @returns dList
+        // @description
+        // Returns a list of all map cursor types known to the server (only their Bukkit enum names).
+        // -->
+        if (attribute.startsWith("list_map_cursor_types")) {
+            dList mapCursors = new dList();
+            for (MapCursor.Type cursor : MapCursor.Type.values()) {
+                mapCursors.add(cursor.toString());
+            }
+            event.setReplaced(mapCursors.getAttribute(attribute.fulfill(1)));
+        }
+
+        // <--[tag]
+        // @attribute <server.list_world_types>
+        // @returns dList
+        // @description
+        // Returns a list of all world types known to the server (only their Bukkit enum names).
+        // -->
+        if (attribute.startsWith("list_world_types")) {
+            dList worldTypes = new dList();
+            for (WorldType world : WorldType.values()) {
+                worldTypes.add(world.toString());
+            }
+            event.setReplaced(worldTypes.getAttribute(attribute.fulfill(1)));
         }
 
         // <--[tag]
@@ -1297,13 +1465,68 @@ public class ServerTags {
             event.setReplaced(new Element(NMSHandler.getInstance().getPort()).getAttribute(attribute.fulfill(1)));
         }
 
-        // TODO: Add everything else from Bukkit.getServer().*
+        // <--[tag]
+        // @attribute <server.list_plugins_handling_event[<bukkit event>]>
+        // @returns dList(dPlugin)
+        // @description
+        // Returns a list of all plugins that handle a given Bukkit event.
+        // Can specify by ScriptEvent name ("PlayerBreaksBlock"), or by full Bukkit class name ("org.bukkit.event.block.BlockBreakEvent").
+        // This is a primarily a dev tool and is not necessarily useful to most players or scripts.
+        // -->
+        else if (attribute.matches("list_plugins_handling_event")
+                && attribute.hasContext(1)) {
+            String eventName = attribute.getContext(1);
+            if (eventName.contains(".")) {
+                try {
+                    Class clazz = Class.forName(eventName, false, ServerTags.class.getClassLoader());
+                    dList result = getHandlerPluginList(clazz);
+                    if (result != null) {
+                        event.setReplaced(result.getAttribute(attribute.fulfill(1)));
+                    }
+                }
+                catch (ClassNotFoundException ex) {
+                    if (!attribute.hasAlternative()) {
+                        dB.echoError(ex);
+                    }
+                }
+            }
+            else {
+                ScriptEvent scriptEvent = ScriptEvent.eventLookup.get(CoreUtilities.toLowerCase(eventName));
+                if (scriptEvent instanceof Listener) {
+                    Plugin plugin = DenizenAPI.getCurrentInstance();
+                    for (Class eventClass : plugin.getPluginLoader()
+                            .createRegisteredListeners((Listener) scriptEvent, plugin).keySet()) {
+                        dList result = getHandlerPluginList(eventClass);
+                        // Return results for the first valid match.
+                        if (result != null && result.size() > 0) {
+                            event.setReplaced(result.getAttribute(attribute.fulfill(1)));
+                            return;
+                        }
+                    }
+                    event.setReplaced(new dList().getAttribute(attribute.fulfill(1)));
+                }
+            }
+        }
+    }
 
+    public static dList getHandlerPluginList(Class eventClass) {
+        if (Event.class.isAssignableFrom(eventClass)) {
+            HandlerList handlers = BukkitScriptEvent.getEventListeners(eventClass);
+            if (handlers != null) {
+                dList result = new dList();
+                HashSet<String> deduplicationSet = new HashSet<>();
+                for (RegisteredListener listener : handlers.getRegisteredListeners()) {
+                    if (deduplicationSet.add(listener.getPlugin().getName())) {
+                        result.addObject(new dPlugin(listener.getPlugin()));
+                    }
+                }
+                return result;
+            }
+        }
+        return null;
     }
 
     public static void adjustServer(Mechanism mechanism) {
-        Element value = mechanism.getValue();
-
         // <--[mechanism]
         // @object server
         // @name delete_file
@@ -1319,7 +1542,7 @@ public class ServerTags {
                 dB.echoError("File deletion disabled by administrator.");
                 return;
             }
-            File file = new File(DenizenAPI.getCurrentInstance().getDataFolder(), value.asString());
+            File file = new File(DenizenAPI.getCurrentInstance().getDataFolder(), mechanism.getValue().asString());
             if (!Utilities.isSafeFile(file)) {
                 dB.echoError("Cannot delete that file (unsafe path).");
                 return;
@@ -1332,24 +1555,6 @@ public class ServerTags {
             catch (Exception e) {
                 dB.echoError("Failed to delete file: " + e.getMessage());
             }
-        }
-
-        // <--[mechanism]
-        // @object server
-        // @name run_java
-        // @input Element
-        // @description
-        // Executes an arbitrary Java method (input as the text of Java code to run). Warning: EXTREMELY DANGEROUS.
-        // Require config setting 'Commands.Java.Allow Running java'.
-        // @tags
-        // None
-        // -->
-        if (mechanism.matches("run_java") && mechanism.hasValue()) {
-            if (!Settings.allowRunningJava()) {
-                dB.echoError("Java execution disabled by administrator.");
-                return;
-            }
-            DenizenAPI.getCurrentInstance().runtimeCompiler.runString(mechanism.getValue().asString());
         }
 
         // Deprecated in favor of SYSTEM.redirect_logging (Core)
@@ -1368,30 +1573,6 @@ public class ServerTags {
 
         // <--[mechanism]
         // @object server
-        // @name redirect_bukkit_logging
-        // @input Element(Boolean)
-        // @description
-        // Tells the server to redirect Bukkit-based logging to a world event or not.
-        // Note that this redirects *all console output* not just Denizen output.
-        // Note: don't enable /denizen debug -e while this is active.
-        // @tags
-        // None
-        // -->
-        if (mechanism.matches("redirect_bukkit_logging") && mechanism.hasValue()) {
-            if (!Settings.allowConsoleRedirection()) {
-                dB.echoError("Console redirection disabled by administrator.");
-                return;
-            }
-            /*if (mechanism.getValue().asBoolean()) {
-                Denizen.logInterceptor.redirectOutput();
-            }
-            else {
-                Denizen.logInterceptor.standardOutput();
-            }*/
-        }
-
-        // <--[mechanism]
-        // @object server
         // @name reset_event_stats
         // @input None
         // @description
@@ -1401,9 +1582,9 @@ public class ServerTags {
         // -->
         if (mechanism.matches("reset_event_stats")) {
             for (ScriptEvent se : ScriptEvent.events) {
-                se.fires = 0;
-                se.scriptFires = 0;
-                se.nanoTimes = 0;
+                se.stats.fires = 0;
+                se.stats.scriptFires = 0;
+                se.stats.nanoTimes = 0;
             }
         }
 
@@ -1439,6 +1620,32 @@ public class ServerTags {
             }
             Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "+> Server restarted by a Denizen script, see config to prevent this!");
             Bukkit.spigot().restart();
+        }
+
+        // <--[mechanism]
+        // @object server
+        // @name save
+        // @input None
+        // @description
+        // Immediately saves the Denizen saves files.
+        // @tags
+        // None
+        // -->
+        if (mechanism.matches("save")) {
+            DenizenAPI.getCurrentInstance().saveSaves();
+        }
+
+        // <--[mechanism]
+        // @object server
+        // @name save_citizens
+        // @input None
+        // @description
+        // Immediately saves the Citizens saves files.
+        // @tags
+        // None
+        // -->
+        if (Depends.citizens != null && mechanism.matches("save_citizens")) {
+            Depends.citizens.storeNPCs(new CommandContext(new String[0]));
         }
 
         // <--[mechanism]

@@ -6,6 +6,7 @@ import net.aufdemrand.denizen.nms.interfaces.BlockData;
 import net.aufdemrand.denizen.nms.interfaces.BlockHelper;
 import net.aufdemrand.denizen.objects.notable.NotableManager;
 import net.aufdemrand.denizen.utilities.Utilities;
+import net.aufdemrand.denizen.utilities.blocks.OldMaterialsHelper;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizen.utilities.depends.Depends;
 import net.aufdemrand.denizencore.objects.*;
@@ -17,7 +18,6 @@ import net.aufdemrand.denizencore.utilities.CoreUtilities;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -26,9 +26,7 @@ import org.bukkit.material.MaterialData;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,7 +35,13 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
     // Cloning
     @Override
     public dCuboid clone() throws CloneNotSupportedException {
-        return (dCuboid) super.clone();
+        dCuboid cuboid = (dCuboid) super.clone();
+        cuboid.pairs = new ArrayList<>(pairs.size());
+        for (LocationPair pair : pairs) {
+            cuboid.pairs.add(new LocationPair(pair.point_1.clone(), pair.point_2.clone()));
+        }
+        cuboid.filter = new ArrayList<>(filter);
+        return cuboid;
     }
 
     /////////////////////
@@ -240,10 +244,10 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
     //////////////////
 
     // Location Pairs (low, high) that make up the dCuboid
-    public List<LocationPair> pairs = new ArrayList<LocationPair>();
+    public List<LocationPair> pairs = new ArrayList<>();
 
     // Only put dMaterials in filter.
-    ArrayList<dObject> filter = new ArrayList<dObject>();
+    ArrayList<dObject> filter = new ArrayList<>();
 
     /**
      * Construct the cuboid without adding pairs
@@ -430,7 +434,7 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
         if (materials == null) {
             return true;
         }
-        dMaterial mat = dMaterial.getMaterialFrom(loc.getBlock().getType(), loc.getBlock().getData());
+        dMaterial mat = OldMaterialsHelper.getMaterialFrom(loc.getBlock().getType(), loc.getBlock().getData());
         for (dMaterial material : materials) {
             if (mat.equals(material) || (mat.getMaterial() == material.getMaterial()
                     && (material.getData() == null || material.getData() == 0))) { // TODO: only if null?
@@ -467,7 +471,7 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
                     for (int z = 0; z != z_distance + 1; z++) {
                         loc = new dLocation(loc_1.clone().add(x, y, z));
                         if (loc.getY() < 0 || loc.getY() > 255) {
-                            continue; // TODO: Why is this ever possible?
+                            continue;
                         }
                         if (!filter.isEmpty()) { // TODO: Should 'filter' exist?
                             // Check filter
@@ -791,7 +795,7 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
             @Override
             public String run(Attribute attribute, dObject object) {
                 if (attribute.hasContext(1)) {
-                    return new dList(((dCuboid) object).getBlocks(dList.valueOf(attribute.getContext(1)).filter(dMaterial.class)))
+                    return new dList(((dCuboid) object).getBlocks(dList.valueOf(attribute.getContext(1)).filter(dMaterial.class, attribute.context)))
                             .getAttribute(attribute.fulfill(1));
                 }
                 else {
@@ -817,28 +821,6 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
         });
 
         // <--[tag]
-        // @attribute <cu@cuboid.member[<#>]>
-        // @returns dCuboid
-        // @description
-        // Returns a new dCuboid of a single member of this dCuboid. Just specify an index.
-        // -->
-        registerTag("member", new TagRunnable() {
-            @Override
-            public String run(Attribute attribute, dObject object) {
-                int member = attribute.getIntContext(1);
-                if (member < 1) {
-                    member = 1;
-                }
-                if (member > ((dCuboid) object).pairs.size()) {
-                    member = ((dCuboid) object).pairs.size();
-                }
-                return new dCuboid(((dCuboid) object).pairs.get(member - 1).low, ((dCuboid) object).pairs.get(member - 1).high)
-                        .getAttribute(attribute.fulfill(1));
-            }
-        });
-        registerTag("get_member", registeredTags.get("member"));
-
-        // <--[tag]
         // @attribute <cu@cuboid.spawnable_blocks[<Material>|...]>
         // @returns dList(dLocation)
         // @description
@@ -851,7 +833,7 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
             @Override
             public String run(Attribute attribute, dObject object) {
                 if (attribute.hasContext(1)) {
-                    return new dList(((dCuboid) object).getSpawnableBlocks(dList.valueOf(attribute.getContext(1)).filter(dMaterial.class)))
+                    return new dList(((dCuboid) object).getSpawnableBlocks(dList.valueOf(attribute.getContext(1)).filter(dMaterial.class, attribute.context)))
                             .getAttribute(attribute.fulfill(1));
                 }
                 else {
@@ -995,11 +977,86 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
         });
 
         // <--[tag]
-        // @attribute <cu@cuboid.center[<index>]>
+        // @attribute <cu@cuboid.get[<index>]>
+        // @returns dCuboid
+        // @description
+        // Returns a cuboid representing the one component of this cuboid (for cuboids that contain multiple sub-cuboids).
+        // -->
+        registerTag("get", new TagRunnable() {
+            @Override
+            public String run(Attribute attribute, dObject object) {
+                if (!attribute.hasContext(1)) {
+                    dB.echoError("The tag cu@cuboid.get[...] must have a value.");
+                    return null;
+                }
+                else {
+                    int member = attribute.getIntContext(1);
+                    if (member < 1) {
+                        member = 1;
+                    }
+                    if (member > ((dCuboid) object).pairs.size()) {
+                        member = ((dCuboid) object).pairs.size();
+                    }
+                    LocationPair pair = ((dCuboid) object).pairs.get(member - 1);
+                    return new dCuboid(pair.point_1, pair.point_2).getAttribute(attribute.fulfill(1));
+                }
+            }
+        });
+        registerTag("member", registeredTags.get("get"));
+        registerTag("get_member", registeredTags.get("get"));
+
+        // <--[tag]
+        // @attribute <cu@cuboid.set[<cuboid>].at[<index>]>
+        // @returns dCuboid
+        // @description
+        // Returns a modified copy of this cuboid, with the specific sub-cuboid index changed to hold the input cuboid.
+        // -->
+        registerTag("set", new TagRunnable() {
+            @Override
+            public String run(Attribute attribute, dObject object) {
+                if (!attribute.hasContext(1)) {
+                    dB.echoError("The tag cu@cuboid.set[...] must have a value.");
+                    return null;
+                }
+                else {
+                    dCuboid subCuboid = dCuboid.valueOf(attribute.getContext(1));
+                    attribute = attribute.fulfill(1);
+                    if (!attribute.matches("at")) {
+                        attribute.fulfill(1);
+                        dB.echoError("The tag cu@cuboid.set[...] must be followed by an 'at'.");
+                        return null;
+                    }
+                    if (!attribute.hasContext(1)) {
+                        attribute.fulfill(1);
+                        dB.echoError("The tag cu@cuboid.set[...].at[...] must have an 'at' value.");
+                        return null;
+                    }
+                    int member = attribute.getIntContext(1);
+                    if (member < 1) {
+                        member = 1;
+                    }
+                    if (member > ((dCuboid) object).pairs.size()) {
+                        member = ((dCuboid) object).pairs.size();
+                    }
+                    LocationPair pair = ((dCuboid) object).pairs.get(0);
+                    try {
+                        dCuboid cloned = ((dCuboid) object).clone();
+                        cloned.pairs.set(member - 1, new LocationPair(pair.point_1, pair.point_2));
+                        return cloned.getAttribute(attribute.fulfill(1));
+                    }
+                    catch (CloneNotSupportedException ex) {
+                        dB.echoError(ex); // This should never happen
+                        return null;
+                    }
+                }
+            }
+        });
+
+        // <--[tag]
+        // @attribute <cu@cuboid.center>
         // @returns dLocation
         // @description
-        // Returns the center location. If a single-member dCuboid, no index is required.
-        // If wanting the center of a specific member, just specify an index.
+        // Returns the location of the exact center of the cuboid.
         // -->
         registerTag("center", new TagRunnable() {
             @Override
@@ -1027,11 +1084,10 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
         });
 
         // <--[tag]
-        // @attribute <cu@cuboid.size[<index>]>
+        // @attribute <cu@cuboid.size>
         // @returns dLocation
         // @description
-        // Returns the size of the cuboid. If a single-member dCuboid, no index is required.
-        // If wanting the center of a specific member, just specify an index.
+        // Returns the size of the cuboid.
         // Effectively equivalent to: (max - min) + (1,1,1)
         // -->
         registerTag("size", new TagRunnable() {
@@ -1057,11 +1113,10 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
         });
 
         // <--[tag]
-        // @attribute <cu@cuboid.max[<index>]>
+        // @attribute <cu@cuboid.max>
         // @returns dLocation
         // @description
-        // Returns the highest-numbered corner location. If a single-member dCuboid, no
-        // index is required. If wanting the max of a specific member, just specify an index.
+        // Returns the highest-numbered (maximum) corner location.
         // -->
         registerTag("max", new TagRunnable() {
             @Override
@@ -1083,11 +1138,10 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
         });
 
         // <--[tag]
-        // @attribute <cu@cuboid.min[<index>]>
+        // @attribute <cu@cuboid.min>
         // @returns dLocation
         // @description
-        // Returns the lowest-numbered corner location. If a single-member dCuboid, no
-        // index is required. If wanting the min of a specific member, just specify an index.
+        // Returns the lowest-numbered (minimum) corner location.
         // -->
         registerTag("min", new TagRunnable() {
             @Override
@@ -1150,6 +1204,143 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
                     dB.echoError(ex); // This should never happen
                 }
                 return null;
+            }
+        });
+
+        // <--[tag]
+        // @attribute <cu@cuboid.include_x[<number>]>
+        // @returns dCuboid
+        // @description
+        // Expands the first member of the dCuboid to contain the given X value, and returns the expanded cuboid.
+        // -->
+        registerTag("include_x", new TagRunnable() {
+            @Override
+            public String run(Attribute attribute, dObject object) {
+                if (!attribute.hasContext(1)) {
+                    dB.echoError("The tag cu@cuboid.include_x[...] must have a value.");
+                    return null;
+                }
+                try {
+                    double x = attribute.getDoubleContext(1);
+                    dCuboid cuboid = ((dCuboid) object).clone();
+                    if (x < cuboid.pairs.get(0).low.getX()) {
+                        cuboid.pairs.get(0).low = new dLocation(cuboid.pairs.get(0).low.getWorld(), x, cuboid.pairs.get(0).low.getY(), cuboid.pairs.get(0).low.getZ());
+                    }
+                    if (x > cuboid.pairs.get(0).high.getX()) {
+                        cuboid.pairs.get(0).high = new dLocation(cuboid.pairs.get(0).high.getWorld(), x, cuboid.pairs.get(0).high.getY(), cuboid.pairs.get(0).high.getZ());
+                    }
+                    return cuboid.getAttribute(attribute.fulfill(1));
+                }
+                catch (CloneNotSupportedException ex) {
+                    dB.echoError(ex); // This should never happen
+                }
+                return null;
+            }
+        });
+
+        // <--[tag]
+        // @attribute <cu@cuboid.include_y[<number>]>
+        // @returns dCuboid
+        // @description
+        // Expands the first member of the dCuboid to contain the given Y value, and returns the expanded cuboid.
+        // -->
+        registerTag("include_y", new TagRunnable() {
+            @Override
+            public String run(Attribute attribute, dObject object) {
+                if (!attribute.hasContext(1)) {
+                    dB.echoError("The tag cu@cuboid.include_y[...] must have a value.");
+                    return null;
+                }
+                try {
+                    double y = attribute.getDoubleContext(1);
+                    dCuboid cuboid = ((dCuboid) object).clone();
+                    if (y < cuboid.pairs.get(0).low.getY()) {
+                        cuboid.pairs.get(0).low = new dLocation(cuboid.pairs.get(0).low.getWorld(), cuboid.pairs.get(0).low.getX(), y, cuboid.pairs.get(0).low.getZ());
+                    }
+                    if (y > cuboid.pairs.get(0).high.getY()) {
+                        cuboid.pairs.get(0).high = new dLocation(cuboid.pairs.get(0).high.getWorld(), cuboid.pairs.get(0).high.getX(), y, cuboid.pairs.get(0).high.getZ());
+                    }
+                    return cuboid.getAttribute(attribute.fulfill(1));
+                }
+                catch (CloneNotSupportedException ex) {
+                    dB.echoError(ex); // This should never happen
+                }
+                return null;
+            }
+        });
+
+        // <--[tag]
+        // @attribute <cu@cuboid.include_z[<number>]>
+        // @returns dCuboid
+        // @description
+        // Expands the first member of the dCuboid to contain the given Z value, and returns the expanded cuboid.
+        // -->
+        registerTag("include_z", new TagRunnable() {
+            @Override
+            public String run(Attribute attribute, dObject object) {
+                if (!attribute.hasContext(1)) {
+                    dB.echoError("The tag cu@cuboid.include_z[...] must have a value.");
+                    return null;
+                }
+                try {
+                    double z = attribute.getDoubleContext(1);
+                    dCuboid cuboid = ((dCuboid) object).clone();
+                    if (z < cuboid.pairs.get(0).low.getZ()) {
+                        cuboid.pairs.get(0).low = new dLocation(cuboid.pairs.get(0).low.getWorld(), cuboid.pairs.get(0).low.getX(), cuboid.pairs.get(0).low.getY(), z);
+                    }
+                    if (z > cuboid.pairs.get(0).high.getZ()) {
+                        cuboid.pairs.get(0).high = new dLocation(cuboid.pairs.get(0).high.getWorld(), cuboid.pairs.get(0).high.getX(), cuboid.pairs.get(0).high.getY(), z);
+                    }
+                    return cuboid.getAttribute(attribute.fulfill(1));
+                }
+                catch (CloneNotSupportedException ex) {
+                    dB.echoError(ex); // This should never happen
+                }
+                return null;
+            }
+        });
+
+        // <--[tag]
+        // @attribute <cu@cuboid.with_min[<location>]>
+        // @returns dCuboid
+        // @description
+        // Changes the first member of the dCuboid to have the given minimum location, and returns the changed cuboid.
+        // If values in the new min are higher than the existing max, the output max will contain the new min values,
+        // and the output min will contain the old max values.
+        // Note that this is equivalent to constructing a cuboid with the input value and the original cuboids max value.
+        // -->
+        registerTag("with_min", new TagRunnable() {
+            @Override
+            public String run(Attribute attribute, dObject object) {
+                if (!attribute.hasContext(1)) {
+                    dB.echoError("The tag cu@cuboid.with_min[...] must have a value.");
+                    return null;
+                }
+                dCuboid cuboid = (dCuboid) object;
+                dLocation location = dLocation.valueOf(attribute.getContext(1));
+                return new dCuboid(location, cuboid.pairs.get(0).high).getAttribute(attribute.fulfill(1));
+            }
+        });
+
+        // <--[tag]
+        // @attribute <cu@cuboid.with_max[<location>]>
+        // @returns dCuboid
+        // @description
+        // Changes the first member of the dCuboid to have the given maximum location, and returns the changed cuboid.
+        // If values in the new max are lower than the existing min, the output min will contain the new max values,
+        // and the output max will contain the old min values.
+        // Note that this is equivalent to constructing a cuboid with the input value and the original cuboids min value.
+        // -->
+        registerTag("with_max", new TagRunnable() {
+            @Override
+            public String run(Attribute attribute, dObject object) {
+                if (!attribute.hasContext(1)) {
+                    dB.echoError("The tag cu@cuboid.with_max[...] must have a value.");
+                    return null;
+                }
+                dCuboid cuboid = (dCuboid) object;
+                dLocation location = dLocation.valueOf(attribute.getContext(1));
+                return new dCuboid(location, cuboid.pairs.get(0).low).getAttribute(attribute.fulfill(1));
             }
         });
 
@@ -1388,20 +1579,22 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
     }
 
     public void applyProperty(Mechanism mechanism) {
+        if (NotableManager.isExactSavedObject(this)) {
+            dB.echoError("Cannot apply properties to noted objects.");
+            return;
+        }
         adjust(mechanism);
     }
 
     @Override
     public void adjust(Mechanism mechanism) {
 
-        Element value = mechanism.getValue();
-
         // TODO: Better mechanisms!
 
         if (mechanism.matches("outset")) {
             int mod = 1;
-            if (value != null && mechanism.requireInteger("Invalid integer specified. Assuming '1'.")) {
-                mod = value.asInt();
+            if (mechanism.hasValue() && mechanism.requireInteger("Invalid integer specified. Assuming '1'.")) {
+                mod = mechanism.getValue().asInt();
             }
             for (LocationPair pair : pairs) {
                 pair.low.add(-1 * mod, -1 * mod, -1 * mod);
@@ -1416,8 +1609,8 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
 
         if (mechanism.matches("expand")) {
             int mod = 1;
-            if (value != null && mechanism.requireInteger("Invalid integer specified. Assuming '1'.")) {
-                mod = value.asInt();
+            if (mechanism.hasValue() && mechanism.requireInteger("Invalid integer specified. Assuming '1'.")) {
+                mod = mechanism.getValue().asInt();
             }
             for (LocationPair pair : pairs) {
                 pair.low.add(-1 * mod, -1 * mod, -1 * mod);
@@ -1433,8 +1626,8 @@ public class dCuboid implements dObject, Cloneable, Notable, Adjustable {
 
         if (mechanism.matches("set_location")) {
             int mod = 1;
-            if (value != null && mechanism.requireInteger("Invalid integer specified. Assuming '1'.")) {
-                mod = value.asInt();
+            if (mechanism.hasValue() && mechanism.requireInteger("Invalid integer specified. Assuming '1'.")) {
+                mod = mechanism.getValue().asInt();
             }
             for (LocationPair pair : pairs) {
                 pair.low.add(-1 * mod, -1 * mod, -1 * mod);

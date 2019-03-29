@@ -1,7 +1,6 @@
 package net.aufdemrand.denizen.scripts.commands.core;
 
 import net.aufdemrand.denizen.utilities.DenizenAPI;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -95,7 +94,7 @@ public class SQLCommand extends AbstractCommand implements Holdable {
     }
 
     @Override
-    public void execute(final ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(final ScriptEntry scriptEntry) {
 
         Element action = scriptEntry.getElement("action");
         final Element server = scriptEntry.getElement("server");
@@ -231,7 +230,7 @@ public class SQLCommand extends AbstractCommand implements Holdable {
                                     count++;
                                     StringBuilder current = new StringBuilder();
                                     for (int i = 0; i < columns; i++) {
-                                        current.append(EscapeTags.Escape(set.getString(i + 1))).append("/");
+                                        current.append(EscapeTags.escape(set.getString(i + 1))).append("/");
                                     }
                                     rows.add(current.toString());
                                 }
@@ -272,7 +271,7 @@ public class SQLCommand extends AbstractCommand implements Holdable {
                         count++;
                         StringBuilder current = new StringBuilder();
                         for (int i = 0; i < columns; i++) {
-                            current.append(EscapeTags.Escape(set.getString(i + 1))).append("/");
+                            current.append(EscapeTags.escape(set.getString(i + 1))).append("/");
                         }
                         rows.add(current.toString());
                     }
@@ -303,7 +302,7 @@ public class SQLCommand extends AbstractCommand implements Holdable {
                 while (set.next()) {
                     StringBuilder current = new StringBuilder();
                     for (int i = 0; i < columns; i++) {
-                        current.append(EscapeTags.Escape(set.getString(i + 1))).append("/");
+                        current.append(EscapeTags.escape(set.getString(i + 1))).append("/");
                     }
                     rows.add(current.toString());
                 }

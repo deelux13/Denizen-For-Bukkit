@@ -6,13 +6,11 @@ import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.objects.notable.NotableManager;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -24,7 +22,8 @@ public class PlayerWalksOverScriptEvent extends BukkitScriptEvent implements Lis
     // player walks over notable
     // player walks over <location>
     //
-    // @Regex ^on player walks over [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on player walks over [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -50,25 +49,13 @@ public class PlayerWalksOverScriptEvent extends BukkitScriptEvent implements Lis
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String loc = CoreUtilities.getXthArg(3, lower);
+        String loc = path.eventArgLowerAt(3);
         return loc.equals(CoreUtilities.toLowerCase(notable)) || tryLocation(new dLocation(event.getPlayer().getLocation()), loc);
     }
 
     @Override
     public String getName() {
         return "PlayerWalksOver";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerMoveEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -101,9 +88,7 @@ public class PlayerWalksOverScriptEvent extends BukkitScriptEvent implements Lis
         if (notable == null) {
             return;
         }
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
     }
 }

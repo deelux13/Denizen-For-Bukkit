@@ -5,7 +5,6 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.objects.dPlayer;
 import net.aufdemrand.denizen.scripts.containers.core.BookScriptContainer;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.MaterialCompat;
 import net.aufdemrand.denizen.utilities.debugging.dB;
 import net.aufdemrand.denizencore.objects.Element;
@@ -14,7 +13,6 @@ import net.aufdemrand.denizencore.objects.dScript;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerEditBookEvent;
@@ -59,9 +57,7 @@ public class PlayerEditsBookScriptEvent extends BukkitScriptEvent implements Lis
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String action = CoreUtilities.getXthArg(1, lower);
+        String action = path.eventArgLowerAt(1);
         if (action.equals("edits")) {
             return true;
         }
@@ -77,19 +73,9 @@ public class PlayerEditsBookScriptEvent extends BukkitScriptEvent implements Lis
     }
 
     @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        PlayerEditBookEvent.getHandlerList().unregister(this);
-    }
-
-    @Override
     public boolean applyDetermination(ScriptContainer container, String determination) {
         if (determination.toUpperCase().equals("NOT_SIGNING")) {
-            signing = Element.FALSE;
+            signing = new Element(false);
         }
         else if (dScript.matches(determination)) {
             dScript script = dScript.valueOf(determination);
@@ -97,7 +83,7 @@ public class PlayerEditsBookScriptEvent extends BukkitScriptEvent implements Lis
                 dItem dBook = ((BookScriptContainer) script.getContainer()).getBookFrom(player, null);
                 bookMeta = (BookMeta) dBook.getItemStack().getItemMeta();
                 if (dBook.getMaterial().getMaterial() == MaterialCompat.WRITABLE_BOOK) {
-                    signing = Element.FALSE;
+                    signing = new Element(false);
                 }
             }
             else {
@@ -134,10 +120,8 @@ public class PlayerEditsBookScriptEvent extends BukkitScriptEvent implements Lis
         pages = new Element(bookMeta.getPageCount());
         title = event.isSigning() ? new Element(bookMeta.getTitle()) : null;
         book = new dItem(event.getPlayer().getInventory().getItem(event.getSlot()));
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setNewBookMeta(bookMeta);
         event.setSigning(signing.asBoolean());
     }

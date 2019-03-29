@@ -1,7 +1,6 @@
 package net.aufdemrand.denizen.scripts.commands.world;
 
 import net.aufdemrand.denizen.nms.NMSHandler;
-import net.aufdemrand.denizen.nms.interfaces.BlockData;
 import net.aufdemrand.denizen.nms.interfaces.WorldHelper;
 import net.aufdemrand.denizen.objects.dCuboid;
 import net.aufdemrand.denizen.objects.dEllipsoid;
@@ -9,7 +8,6 @@ import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.objects.dMaterial;
 import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -122,7 +120,7 @@ public class ModifyBlockCommand extends AbstractCommand implements Listener, Hol
 
 
     @Override
-    public void execute(final ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(final ScriptEntry scriptEntry) {
 
         final dList materials = scriptEntry.getdObject("materials");
         final List<dLocation> locations = (List<dLocation>) scriptEntry.getObject("locations");
@@ -141,7 +139,7 @@ public class ModifyBlockCommand extends AbstractCommand implements Listener, Hol
             percents = null;
         }
 
-        final List<dMaterial> materialList = materials.filter(dMaterial.class);
+        final List<dMaterial> materialList = materials.filter(dMaterial.class, scriptEntry);
 
         if (scriptEntry.dbCallShouldDebug()) {
 
@@ -348,9 +346,7 @@ public class ModifyBlockCommand extends AbstractCommand implements Listener, Hol
             location.getBlock().breakNaturally();
         }
         else {
-            // TODO: 1.13 - confirm this works
-            BlockData blockData = NMSHandler.getInstance().getBlockHelper().getBlockData(material.getMaterial(), material.getData());
-            blockData.setBlock(location.getBlock(), physics);
+            material.getNmsBlockData().setBlock(location.getBlock(), physics);
         }
     }
 

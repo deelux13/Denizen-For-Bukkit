@@ -9,7 +9,9 @@ import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.objects.dScript;
 import net.aufdemrand.denizencore.scripts.ScriptEntry;
 import net.aufdemrand.denizencore.scripts.commands.CommandExecuter;
+import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.scripts.queues.ScriptQueue;
+import net.aufdemrand.denizencore.tags.TagContext;
 import net.aufdemrand.denizencore.tags.TagManager;
 import net.aufdemrand.denizencore.utilities.debugging.Debuggable;
 import net.aufdemrand.denizencore.utilities.debugging.dB.DebugElement;
@@ -66,6 +68,7 @@ public class dB {
     public static boolean showStackTraces = true;
     public static boolean showColor = true;
     public static boolean debugOverride = false;
+    public static boolean showSources = false;
 
     public static List<String> filter = new ArrayList<String>();
 
@@ -177,20 +180,6 @@ public class dB {
         }
     }
 
-
-    // These methods are deprecated. Please instead supply a valid Debuggable reference,
-    // which at this time is either a ScriptQueue, a ScriptEntry, or ScriptContainer.
-    // If none of these are available, using dB.log(...)
-    @Deprecated
-    public static void echoDebug(String message) {
-        echo(message, null);
-    }
-
-    @Deprecated
-    public static void echoDebug(DebugElement de, String message) {
-        echoDebug(null, de, message);
-    }
-
     /////////////
     // Other public debugging methods (Always show when debugger is enabled)
     ///////
@@ -214,6 +203,8 @@ public class dB {
     // <--[event]
     // @Events
     // script generates error
+    //
+    // @Regex ^on script generates error$
     //
     // @Triggers when a script generates an error.
     // @Context
@@ -239,8 +230,8 @@ public class dB {
         else if (source != null && source.getLastEntryExecuted() != null && source.getLastEntryExecuted().getScript() != null) {
             script = source.getLastEntryExecuted().getScript();
         }
-        if (ThrowErrorEvent) {
-            ThrowErrorEvent = false;
+        if (throwErrorEvent) {
+            throwErrorEvent = false;
             Map<String, dObject> context = new HashMap<String, dObject>();
             context.put("message", new Element(message));
             if (source != null) {
@@ -257,7 +248,7 @@ public class dB {
             ScriptEntry entry = (source != null ? source.getLastEntryExecuted() : null);
             List<String> Determinations = OldEventManager.doEvents(events,
                     entry != null ? entry.entryData : new BukkitScriptEntryData(null, null), context, true);
-            ThrowErrorEvent = true;
+            throwErrorEvent = true;
             for (String Determination : Determinations) {
                 if (Determination.equalsIgnoreCase("CANCELLED")) {
                     return;
@@ -270,7 +261,7 @@ public class dB {
         ConsoleSender.sendMessage(ChatColor.LIGHT_PURPLE + " " + ChatColor.RED + "ERROR" +
                 (script != null ? " in script '" + script.getName() + "'" : "")
                 + (source != null ? " in queue '" + source.id + "'" : "") + "! "
-                + ChatColor.WHITE + trimMessage(message));
+                + ChatColor.WHITE + message);
         if (net.aufdemrand.denizencore.utilities.debugging.dB.verbose && depthCorrectError == 0) {
             depthCorrectError++;
             try {
@@ -285,11 +276,13 @@ public class dB {
 
     static long depthCorrectError = 0;
 
-    private static boolean ThrowErrorEvent = true;
+    private static boolean throwErrorEvent = true;
 
     // <--[event]
     // @Events
     // server generates exception
+    //
+    // @Regex ^on script generates exception$
     //
     // @Triggers when an exception occurs on the server.
     // @Context
@@ -308,8 +301,8 @@ public class dB {
         if (source == null) {
             source = CommandExecuter.currentQueue;
         }
-        if (ThrowErrorEvent) {
-            ThrowErrorEvent = false;
+        if (throwErrorEvent) {
+            throwErrorEvent = false;
             Map<String, dObject> context = new HashMap<String, dObject>();
             Throwable thrown = ex;
             if (ex.getCause() != null) {
@@ -321,7 +314,7 @@ public class dB {
             ScriptEntry entry = (source != null ? source.getLastEntryExecuted() : null);
             List<String> Determinations = OldEventManager.doEvents(Arrays.asList("server generates exception"),
                     entry == null ? new BukkitScriptEntryData(null, null) : entry.entryData, context);
-            ThrowErrorEvent = true;
+            throwErrorEvent = true;
             for (String Determination : Determinations) {
                 if (Determination.equalsIgnoreCase("CANCELLED")) {
                     return;
@@ -331,43 +324,72 @@ public class dB {
         if (!showDebug) {
             return;
         }
+        boolean wasThrown = throwErrorEvent;
+        throwErrorEvent = false;
         if (!showStackTraces) {
             dB.echoError(source, "Exception! Enable '/denizen debug -s' for the nitty-gritty.");
         }
         else {
             dB.echoError(source, "Internal exception was thrown!");
-            ex.printStackTrace();
-            if (dB.record) {
-                String prefix = ConsoleSender.dateFormat.format(new Date()) + " [SEVERE] ";
-                boolean first = true;
-                while (ex != null) {
-                    dB.Recording.append(URLEncoder.encode(prefix + (first ? "" : "Caused by: ") + ex.toString() + "\n"));
-                    for (StackTraceElement ste : ex.getStackTrace()) {
-                        dB.Recording.append(URLEncoder.encode(prefix + ste.toString() + "\n"));
-                    }
-                    if (ex.getCause() == ex) {
-                        return;
-                    }
-                    ex = ex.getCause();
-                    first = false;
+            StringBuilder errorMesage = new StringBuilder();
+            String prefix = ConsoleSender.dateFormat.format(new Date()) + " [SEVERE] ";
+            boolean first = true;
+            while (ex != null) {
+                errorMesage.append(prefix + (first ? "" : "Caused by: ") + ex.toString() + "\n");
+                for (StackTraceElement ste : ex.getStackTrace()) {
+                    errorMesage.append(prefix + ste.toString() + "\n");
                 }
+                if (ex.getCause() == ex) {
+                    break;
+                }
+                ex = ex.getCause();
+                first = false;
             }
+            dScript script = null;
+            if (source != null && source.getEntries().size() > 0 && source.getEntries().get(0).getScript() != null) {
+                script = source.getEntries().get(0).getScript();
+            }
+            ConsoleSender.sendMessage(ChatColor.LIGHT_PURPLE + " " + ChatColor.RED + "ERROR" +
+                    (script != null ? " in script '" + script.getName() + "'" : "")
+                    + (source != null ? " in queue '" + source.id + "'" : "") + "! "
+                    + ChatColor.WHITE + errorMesage.toString(), false);
         }
+        throwErrorEvent = wasThrown;
     }
 
     private static final Map<Class<?>, String> classNameCache = new WeakHashMap<Class<?>, String>();
+
+    private static class SecurityManagerTrick extends SecurityManager {
+        @Override
+        @SuppressWarnings("rawtypes")
+        protected Class[] getClassContext() {
+            return super.getClassContext();
+        }
+    }
+
+    private static boolean canGetClass = true;
 
     public static void log(String message) {
         if (!showDebug) {
             return;
         }
-        Class<?> caller = sun.reflect.Reflection.getCallerClass(2);
-        String callerName = classNameCache.get(caller);
-        if (callerName == null) {
-            classNameCache.put(caller, callerName = caller.getSimpleName());
+        String callerName = "<JVM-Block>";
+        try {
+            if (canGetClass) {
+                Class[] classes = new SecurityManagerTrick().getClassContext();
+                Class caller = classes.length > 2 ? classes[2] : dB.class;
+                callerName = classNameCache.get(caller);
+                if (callerName == null) {
+                    classNameCache.put(caller, callerName = caller.getSimpleName());
+                }
+                callerName = callerName.length() > 16 ? callerName.substring(0, 12) + "..." : callerName;
+            }
+        }
+        catch (Throwable ex) {
+            canGetClass = false;
         }
         ConsoleSender.sendMessage(ChatColor.YELLOW + "+> ["
-                + (callerName.length() > 16 ? callerName.substring(0, 12) + "..." : callerName) + "] "
+                + callerName + "] "
                 + ChatColor.WHITE + trimMessage(message));
     }
 
@@ -451,7 +473,52 @@ public class dB {
     // Handles checking whether the provided debuggable should submit to the debugger
     private static void echo(String string, Debuggable caller) {
         if (shouldDebug(caller)) {
-            ConsoleSender.sendMessage(string);
+            if (showSources && caller != null) {
+                String callerId;
+                if (caller instanceof ScriptContainer) {
+                    callerId = "Script:" + ((ScriptContainer) caller).getName();
+                }
+                else if (caller instanceof ScriptEntry) {
+                    if (((ScriptEntry) caller).getScript() != null) {
+                        callerId = "Command:" + ((ScriptEntry) caller).getCommandName() + " in Script:" + ((ScriptEntry) caller).getScript().getName();
+                    }
+                    else {
+                        callerId = "Command:" + ((ScriptEntry) caller).getCommandName();
+                    }
+                }
+                else if (caller instanceof ScriptQueue) {
+                    if (((ScriptQueue) caller).script != null) {
+                        callerId = "Queue:" + ((ScriptQueue) caller).id + " running Script:" + ((ScriptQueue) caller).script.getName();
+                    }
+                    else {
+                        callerId = "Queue:" + ((ScriptQueue) caller).id;
+                    }
+                }
+                else if (caller instanceof TagContext) {
+                    if (((TagContext) caller).entry != null) {
+                        ScriptEntry sent = ((TagContext) caller).entry;
+                        if (sent.getScript() != null) {
+                            callerId = "Tag in Command:" + sent.getCommandName() + " in Script:" + sent.getScript().getName();
+                        }
+                        else {
+                            callerId = "Tag in Command:" + sent.getCommandName();
+                        }
+                    }
+                    else if (((TagContext) caller).script != null) {
+                        callerId = "Tag in Script:" + ((TagContext) caller).script.getName();
+                    }
+                    else {
+                        callerId = "Tag:" + caller.toString();
+                    }
+                }
+                else {
+                    callerId = caller.toString();
+                }
+                ConsoleSender.sendMessage(ChatColor.DARK_GRAY + "[Src:" + ChatColor.GRAY + callerId + ChatColor.DARK_GRAY + "]" + ChatColor.WHITE + string);
+            }
+            else {
+                ConsoleSender.sendMessage(string);
+            }
         }
     }
 
@@ -471,6 +538,9 @@ public class dB {
 
         // Use this method for sending a message
         public static void sendMessage(String string) {
+            sendMessage(string, true);
+        }
+        public static void sendMessage(String string, boolean reformat) {
             if (commandSender == null) {
                 commandSender = Bukkit.getServer().getConsoleSender();
             }
@@ -497,34 +567,36 @@ public class dB {
                 skipFooter = false;
             }
 
-            // Create buffer for wrapping debug text nicely. This is mostly needed for Windows logging.
-            String[] words = string.split(" ");
-            StringBuilder buffer = new StringBuilder();
-            int length = 0;
-            int width = Settings.consoleWidth();
-            for (String word : words) { // # of total chars * # of lines - timestamp
-                int strippedLength = ChatColor.stripColor(word).length() + 1;
-                if (length + strippedLength < width) {
-                    buffer.append(word).append(" ");
-                    length = length + strippedLength;
+            if (reformat) {
+                // Create buffer for wrapping debug text nicely. This is mostly needed for Windows logging.
+                String[] words = string.split(" ");
+                StringBuilder buffer = new StringBuilder();
+                int length = 0;
+                int width = Settings.consoleWidth();
+                for (String word : words) { // # of total chars * # of lines - timestamp
+                    int strippedLength = ChatColor.stripColor(word).length() + 1;
+                    if (length + strippedLength < width) {
+                        buffer.append(word).append(" ");
+                        length = length + strippedLength;
+                    }
+                    else {
+                        // Increase # of lines to account for
+                        length = strippedLength;
+                        // Leave spaces to account for timestamp and indent
+                        buffer.append("\n                   ").append(word).append(" ");
+                    }                 // [01:02:03 INFO]:
                 }
-                else {
-                    // Increase # of lines to account for
-                    length = strippedLength;
-                    // Leave spaces to account for timestamp and indent
-                    buffer.append("\n                   ").append(word).append(" ");
-                }                 // [01:02:03 INFO]:
+                string = buffer.toString();
             }
 
-            String result = buffer.toString();
             // Record current buffer to the to-be-submitted buffer
             if (dB.record) {
                 dB.Recording.append(URLEncoder.encode(dateFormat.format(new Date())
-                        + " [INFO] " + result.replace(ChatColor.COLOR_CHAR, (char) 0x01) + "\n"));
+                        + " [INFO] " + string.replace(ChatColor.COLOR_CHAR, (char) 0x01) + "\n"));
             }
 
             // Send buffer to the player
-            commandSender.sendMessage(showColor ? result : ChatColor.stripColor(result));
+            commandSender.sendMessage(showColor ? string : ChatColor.stripColor(string));
         }
     }
 }

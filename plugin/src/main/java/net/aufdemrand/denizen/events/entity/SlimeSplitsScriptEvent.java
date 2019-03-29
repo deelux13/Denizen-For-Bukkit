@@ -2,13 +2,11 @@ package net.aufdemrand.denizen.events.entity;
 
 import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
 import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.SlimeSplitEvent;
@@ -17,9 +15,10 @@ public class SlimeSplitsScriptEvent extends BukkitScriptEvent implements Listene
 
     // <--[event]
     // @Events
-    // slime splits (into <#>) (in <area>)
+    // slime splits (into <#>)
     //
-    // @Regex ^on slime splits( into [^\s]+)?( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on slime splits( into [^\s]+)?$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -52,11 +51,9 @@ public class SlimeSplitsScriptEvent extends BukkitScriptEvent implements Listene
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String counts = CoreUtilities.getXthArg(3, lower);
+        String counts = path.eventArgLowerAt(3);
 
-        if (CoreUtilities.xthArgEquals(2, lower, "into") && !counts.isEmpty()) {
+        if (path.eventArgLowerAt(2).equals("into") && !counts.isEmpty()) {
             try {
                 if (Integer.parseInt(counts) != count) {
                     return false;
@@ -77,16 +74,6 @@ public class SlimeSplitsScriptEvent extends BukkitScriptEvent implements Listene
     @Override
     public String getName() {
         return "SlimeSplits";
-    }
-
-    @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        SlimeSplitEvent.getHandlerList().unregister(this);
     }
 
     @Override
@@ -113,10 +100,8 @@ public class SlimeSplitsScriptEvent extends BukkitScriptEvent implements Listene
     public void onSlimeSplits(SlimeSplitEvent event) {
         entity = new dEntity(event.getEntity());
         count = event.getCount();
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
-        event.setCancelled(cancelled);
+        fire(event);
         event.setCount(count);
     }
 

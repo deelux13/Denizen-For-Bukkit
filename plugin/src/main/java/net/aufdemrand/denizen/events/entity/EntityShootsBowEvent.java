@@ -5,7 +5,6 @@ import net.aufdemrand.denizen.events.BukkitScriptEvent;
 import net.aufdemrand.denizen.objects.dEntity;
 import net.aufdemrand.denizen.objects.dItem;
 import net.aufdemrand.denizen.utilities.Conversion;
-import net.aufdemrand.denizen.utilities.DenizenAPI;
 import net.aufdemrand.denizen.utilities.entity.Position;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -14,7 +13,6 @@ import net.aufdemrand.denizencore.objects.dObject;
 import net.aufdemrand.denizencore.scripts.ScriptEntryData;
 import net.aufdemrand.denizencore.scripts.containers.ScriptContainer;
 import net.aufdemrand.denizencore.utilities.CoreUtilities;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -26,12 +24,13 @@ public class EntityShootsBowEvent extends BukkitScriptEvent implements Listener 
 
     // <--[event]
     // @Events
-    // entity shoots bow (in <area>)
-    // <entity> shoots bow (in <area>)
-    // entity shoots <item> (in <area>)
-    // <entity> shoots <item> (in <area>)
+    // entity shoots bow
+    // <entity> shoots bow
+    // entity shoots <item>
+    // <entity> shoots <item>
     //
-    // @Regex ^on [^\s]+ shoots [^\s]+( in ((notable (cuboid|ellipsoid))|([^\s]+)))?$
+    // @Regex ^on [^\s]+ shoots [^\s]+$
+    // @Switch in <area>
     //
     // @Cancellable true
     //
@@ -71,10 +70,8 @@ public class EntityShootsBowEvent extends BukkitScriptEvent implements Listener 
 
     @Override
     public boolean matches(ScriptPath path) {
-        String s = path.event;
-        String lower = path.eventLower;
-        String attacker = CoreUtilities.getXthArg(0, lower);
-        String item = CoreUtilities.getXthArg(2, lower);
+        String attacker = path.eventArgLowerAt(0);
+        String item = path.eventArgLowerAt(2);
 
         if (!tryEntity(entity, attacker)) {
             return false;
@@ -98,22 +95,12 @@ public class EntityShootsBowEvent extends BukkitScriptEvent implements Listener 
     }
 
     @Override
-    public void init() {
-        Bukkit.getServer().getPluginManager().registerEvents(this, DenizenAPI.getCurrentInstance());
-    }
-
-    @Override
-    public void destroy() {
-        EntityShootBowEvent.getHandlerList().unregister(this);
-    }
-
-    @Override
     public boolean applyDetermination(ScriptContainer container, String determination) {
         if (aH.Argument.valueOf(determination).matchesArgumentList(dEntity.class)) {
             cancelled = true;
 
             // Get the list of entities
-            List<dEntity> newProjectiles = dList.valueOf(determination).filter(dEntity.class);
+            List<dEntity> newProjectiles = dList.valueOf(determination).filter(dEntity.class, container);
             // Go through all the entities, spawning/teleporting them
             for (dEntity newProjectile : newProjectiles) {
                 newProjectile.spawnAt(entity.getEyeLocation()
@@ -172,10 +159,8 @@ public class EntityShootsBowEvent extends BukkitScriptEvent implements Listener 
         Entity projectileEntity = event.getProjectile();
         dEntity.rememberEntity(projectileEntity);
         projectile = new dEntity(projectileEntity);
-        cancelled = event.isCancelled();
         this.event = event;
-        fire();
+        fire(event);
         dEntity.forgetEntity(projectileEntity);
-        event.setCancelled(cancelled);
     }
 }

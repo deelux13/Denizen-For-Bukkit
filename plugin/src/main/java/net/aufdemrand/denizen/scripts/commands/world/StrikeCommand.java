@@ -2,7 +2,6 @@ package net.aufdemrand.denizen.scripts.commands.world;
 
 import net.aufdemrand.denizen.objects.dLocation;
 import net.aufdemrand.denizen.utilities.debugging.dB;
-import net.aufdemrand.denizencore.exceptions.CommandExecutionException;
 import net.aufdemrand.denizencore.exceptions.InvalidArgumentsException;
 import net.aufdemrand.denizencore.objects.Element;
 import net.aufdemrand.denizencore.objects.aH;
@@ -23,7 +22,7 @@ public class StrikeCommand extends AbstractCommand {
                 scriptEntry.addObject("location", arg.asType(dLocation.class));
             }
             else if (arg.matches("no_damage") || arg.matches("nodamage")) {
-                scriptEntry.addObject("damage", Element.FALSE);
+                scriptEntry.addObject("damage", new Element(false));
             }
             else {
                 arg.reportUnhandled();
@@ -36,11 +35,11 @@ public class StrikeCommand extends AbstractCommand {
             throw new InvalidArgumentsException("Missing location argument!");
         }
 
-        scriptEntry.defaultObject("damage", Element.TRUE);
+        scriptEntry.defaultObject("damage", new Element(true));
     }
 
     @Override
-    public void execute(ScriptEntry scriptEntry) throws CommandExecutionException {
+    public void execute(ScriptEntry scriptEntry) {
 
         // Extract objects from ScriptEntry
         dLocation location = (dLocation) scriptEntry.getObject("location");
